@@ -137,6 +137,20 @@ class DeliveryChallan(models.Model):
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan_id} - Vendor: {self.vendor.name}"
 
+class CalibrationReport(models.Model):
+    calibrationtool_id = models.AutoField(primary_key=True)
+    calibration_tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
+    calibration_date = models.DateField()
+    calibration_report_no = models.CharField(max_length=32)
+    calibration_agency = models.CharField(max_length=32)
+    result = models.FloatField()
+    action = models.CharField(max_length=16)
+    next_calibration_date = models.DateField()
+    remark = models.TextField()
+
+    def __str__(self):
+        return f"Calibration Tool: {self.calibration_tool} - Calibration Report No: {self.calibration_report_no}"  
+
 class DeliveryChallanTools(models.Model):
     deliverychallantool_id = models.AutoField(primary_key=True)
     deliverychallan = models.ForeignKey(DeliveryChallan, on_delete=models.DO_NOTHING)
@@ -145,4 +159,4 @@ class DeliveryChallanTools(models.Model):
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan.deliverychallan_id} - Tool ID: {self.tool.instrument_no}"
 
-    
+  

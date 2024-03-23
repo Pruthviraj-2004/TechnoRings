@@ -12,7 +12,8 @@ urlpatterns = [
     path('add-transport-order/', TransportOrderView.as_view(), name='add_transport_order'),
     path('service-order/', ServiceOrderView.as_view(), name='service-order'),
     path('generate-bill/', GenerateBillView.as_view(), name='generate_bill'),
-    path('create_delivery_challan/', views.CreateDeliveryChallanView.as_view(), name='create_delivery_challan'),
+    #path('create_delivery_challan/', views.CreateDeliveryChallanView.as_view(), name='create_delivery_challan'),
+    path('delivery_challan/', views.DeliveryChallanView.as_view(), name='delivery_challan'),
 
 
 

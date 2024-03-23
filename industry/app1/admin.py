@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ShedDetails, ShedTools, ToolMovement, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles
+from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ShedDetails, ShedTools, ToolMovement, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles
 
 
 @admin.register(InstrumentGroupMaster)
@@ -96,3 +96,10 @@ class DeliveryChallanToolsAdmin(admin.ModelAdmin):
     list_display = ('deliverychallantool_id', 'deliverychallan', 'tool')
     list_filter = ('deliverychallan__vendor',)
     search_fields = ('deliverychallan__vendor__name',)
+
+@admin.register(CalibrationReport)
+class CalibrationAdmin(admin.ModelAdmin):
+    list_display = ('calibrationtool_id', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_tool')
+    list_filter = ('calibration_date', 'calibration_agency', 'action')
+    search_fields = ('calibration_report_no', 'calibration_agency')
+    

@@ -1,5 +1,5 @@
 from django import forms
-from .models import DeliveryChallan, DeliveryChallanTools, InstrumentModel, ServiceOrder, ServiceTools, TransportOrder, ShedDetails, TransportTools
+from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel, ServiceOrder, ServiceTools, TransportOrder, ShedDetails, TransportTools
 
 class TransportMovementOrderForm(forms.ModelForm):
     class Meta:
@@ -60,9 +60,10 @@ class DeliveryChallanToolsForm(forms.ModelForm):
     class Meta:
         model = DeliveryChallanTools
         fields = ['tool']
-DeliveryChallanToolsFormSet = forms.inlineformset_factory(
-    DeliveryChallan, 
-    DeliveryChallanTools, 
-    form=DeliveryChallanToolsForm,
-    extra=1  # Number of extra forms to display
-)    
+
+class CalibrationReportForm(forms.ModelForm):
+    class Meta:
+        model = CalibrationReport
+        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark']
+
+DeliveryChallanToolsFormSet = forms.inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)

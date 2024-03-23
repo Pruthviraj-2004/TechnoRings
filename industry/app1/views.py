@@ -1,6 +1,6 @@
 from django.shortcuts import render,  redirect
 from django.views import View
-from .forms import DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
+from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
 from .models import InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
@@ -258,3 +258,26 @@ class CreateDeliveryChallanView(View):
             return redirect('home')  # Redirect to success URL
         return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset})
     
+class DeliveryChallanView(View):
+    def get(self, request):
+        delivery_challan_form = DeliveryChallanForm()
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
+        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset})
+
+    def post(self, request):
+        delivery_challan_form = DeliveryChallanForm(request.POST)
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
+        if delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+            delivery_challan = delivery_challan_form.save()
+            for form in delivery_challan_tools_formset:
+                if form.is_valid():
+                    tool_instance = form.save(commit=False)
+                    tool_instance.deliverychallan = delivery_challan
+                    tool_instance.save()
+                    calibration_report_form = CalibrationReportForm(request.POST)
+                    if calibration_report_form.is_valid():
+                        calibration_report = calibration_report_form.save(commit=False)
+                        calibration_report.calibration_tool = tool_instance.tool
+                        calibration_report.save()
+            return redirect('home')
+        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset})
