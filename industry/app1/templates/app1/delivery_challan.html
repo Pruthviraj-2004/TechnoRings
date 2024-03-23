@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Transport Order</title>
+</head>
+<body>
+    <h1>Add Transport Order</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ delivery_challan_form.as_p }}
+    
+        <h2>Tools</h2>
+        {{ delivery_challan_tools_formset.management_form }}
+        {% for form in delivery_challan_tools_formset %}
+            {{ form.as_p }}
+        {% endfor %}
+    
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
