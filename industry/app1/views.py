@@ -1,7 +1,7 @@
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
-from .models import ServiceOrder, ServiceTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+from .models import InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
 from django.http import JsonResponse
@@ -128,13 +128,30 @@ def home(request):
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import TransportOrder
-from .serializers import TransportOrderSerializer, TransportToolsSerializer
+from .serializers import InstrumentModelSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer
 
 class TransportOrderView(APIView):
     def get(self, request):
-        orders = TransportOrder.objects.all()
-        serializer = TransportOrderSerializer(orders, many=True)
-        return Response(serializer.data)
+        orders_details = TransportOrder.objects.all()
+        orders_serializer = TransportOrderSerializer(orders_details, many=True)
+        
+        instrument_models = InstrumentModel.objects.all()
+        instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
+
+        shed_details = ShedDetails.objects.all()
+        shed_serializer = ShedDetailsSerializer(shed_details, many=True)
+
+        shed_tools_details = ShedTools.objects.all()
+        shed_tools_serializer = ShedToolsSerializer(shed_tools_details, many=True)
+
+        response_data = {
+            'transport_orders': orders_serializer.data,
+            'instrument_models': instrument_serializer.data,
+            'shed_details' : shed_serializer.data,
+            'shed_tools_details' : shed_tools_serializer.data,
+        }
+
+        return Response(response_data)
 
     def post(self, request):
         order_serializer = TransportOrderSerializer(data=request.data)
@@ -145,7 +162,7 @@ class TransportOrderView(APIView):
                 tools_serializer.save(transport=transport_order)
                 return Response({'success': True})
             else:
-                transport_order.delete()  # Rollback if tools data is invalid
+                transport_order.delete()  
                 return Response(tools_serializer.errors, status=400)
         else:
             return Response(order_serializer.errors, status=400)
