@@ -72,6 +72,7 @@ from django.http import JsonResponse
 
 #     def get_success_url(self):
 #         return self.request.path
+
 def home(request):
     return render(request, 'app1/home.html')
 
@@ -96,39 +97,10 @@ def home(request):
 
 #         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-
-# class TransportOrderView(View):
-#     def get(self, request):
-#         order_form = TransportOrderForm()
-#         tool_forms = [TransportToolsForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
-#         data = {
-#             'order_form': order_form.data,
-#             'tool_forms': [form.data for form in tool_forms]
-#         }
-#         return JsonResponse(data)
-
-#     def post(self, request):
-#         order_form = TransportOrderForm(request.POST)
-#         tool_forms = [TransportToolsForm(request.POST, prefix=str(x)) for x in range(3)]  # Adjust the range as needed
-
-#         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
-#             transport_order = order_form.save()
-#             for form in tool_forms:
-#                 if form.cleaned_data.get('tool'):
-#                     tool = form.cleaned_data['tool']
-#                     TransportTools.objects.create(transport=transport_order, tool=tool)
-#             return JsonResponse({'success': True})  # Return success response as JSON
-
-#         errors = {
-#             'order_form_errors': order_form.errors,
-#             'tool_form_errors': [form.errors for form in tool_forms]
-#         }
-#         return JsonResponse(errors, status=400)  # Return errors as JSON with status code 400
-
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import TransportOrder
-from .serializers import InstrumentModelSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer
+from .serializers import InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorSerializer
 
 class TransportOrderView(APIView):
     def get(self, request):
@@ -170,42 +142,12 @@ class TransportOrderView(APIView):
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
 from .models import ServiceOrder, ServiceTools
 
-class ServiceOrderView(View):
-    def get(self, request):
-        order_form = AnotherServiceOrderForm()
-        tool_forms = [AnotherServiceToolForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
-
-        return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
-
-    def post(self, request):
-        order_form = AnotherServiceOrderForm(request.POST)
-        tool_forms = [AnotherServiceToolForm(request.POST, prefix=str(x)) for x in range(3)]
-
-        if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
-            service_order = order_form.save()
-            vendor_id = request.POST.get('vendor')  # Get the vendor ID from the form
-
-            for form in tool_forms:
-                if form.cleaned_data.get('tool'):
-                    tool = form.cleaned_data['tool']
-                    ServiceTools.objects.create(service=service_order, tool=tool, vendor_id=vendor_id)  # Pass vendor_id to create ServiceTools
-
-            return redirect('generate_bill')  # Redirect to GenerateBillView
-
-        # Handle invalid forms
-        return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
-
 # class ServiceOrderView(View):
 #     def get(self, request):
 #         order_form = AnotherServiceOrderForm()
 #         tool_forms = [AnotherServiceToolForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
 
-#         data = {
-#             'order_form': order_form.data,
-#             'tool_forms': [form.data for form in tool_forms]
-#         }
-
-#         return JsonResponse(data)
+#         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
 #     def post(self, request):
 #         order_form = AnotherServiceOrderForm(request.POST)
@@ -213,21 +155,55 @@ class ServiceOrderView(View):
 
 #         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
 #             service_order = order_form.save()
-#             vendor_id = request.POST.get('vendor')
+#             vendor_id = request.POST.get('vendor')  # Get the vendor ID from the form
 
 #             for form in tool_forms:
 #                 if form.cleaned_data.get('tool'):
 #                     tool = form.cleaned_data['tool']
-#                     ServiceTools.objects.create(service=service_order, tool=tool, vendor_id=vendor_id)
+#                     ServiceTools.objects.create(service=service_order, tool=tool, vendor_id=vendor_id)  # Pass vendor_id to create ServiceTools
 
-#             return JsonResponse({'success': True})
+#             return redirect('generate_bill')  # Redirect to GenerateBillView
 
-#         errors = {
-#             'order_form_errors': order_form.errors,
-#             'tool_form_errors': [form.errors for form in tool_forms]
-#         }
-#         return JsonResponse(errors, status=400)
+#         # Handle invalid forms
+#         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
+
+class ServiceOrderView(APIView):
+    def get(self, request):
+        service_orders = ServiceOrder.objects.all()
+        service_order_serializer = ServiceOrderSerializer(service_orders, many=True)
+
+        service_tools = ServiceTools.objects.all()
+        service_tools_serializer = ServiceToolsSerializer(service_tools, many=True)
+
+        vendors = Vendor.objects.all()
+        vendor_serializer = VendorSerializer(vendors, many=True)
+
+        instrument_models = InstrumentModel.objects.all()
+        instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
+
+        response_data = {
+            'service_orders': service_order_serializer.data,
+            'service_tools': service_tools_serializer.data,
+            'vendors': vendor_serializer.data,
+            'instrument_tools' : instrument_serializer.data,
+        }
+
+        return Response(response_data)
+
+    def post(self, request):
+        order_serializer = ServiceOrderSerializer(data=request.data)
+        if order_serializer.is_valid():
+            service_order = order_serializer.save()
+            tools_serializer = ServiceToolsSerializer(data=request.data.get('tools'), many=True)
+            if tools_serializer.is_valid():
+                tools_serializer.save(service=service_order)
+                return Response({'success': True})
+            else:
+                service_order.delete()  
+                return Response(tools_serializer.errors, status=400)
+        else:
+            return Response(order_serializer.errors, status=400)
 class GenerateBillView(View):
     def get(self, request):
         service_tools = ServiceTools.objects.all()
