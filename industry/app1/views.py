@@ -76,25 +76,25 @@ def home(request):
     return render(request, 'app1/home.html')
 
 
-class TransportOrderView(View):
-    def get(self, request):
-        order_form = TransportOrderForm()
-        tool_forms = [TransportToolsForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
-        return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
+# class TransportOrderView(View):
+#     def get(self, request):
+#         order_form = TransportOrderForm()
+#         tool_forms = [TransportToolsForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
+#         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-    def post(self, request):
-        order_form = TransportOrderForm(request.POST)
-        tool_forms = [TransportToolsForm(request.POST, prefix=str(x)) for x in range(3)]  # Adjust the range as needed
+#     def post(self, request):
+#         order_form = TransportOrderForm(request.POST)
+#         tool_forms = [TransportToolsForm(request.POST, prefix=str(x)) for x in range(3)]  # Adjust the range as needed
 
-        if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
-            transport_order = order_form.save()
-            for form in tool_forms:
-                if form.cleaned_data.get('tool'):
-                    tool = form.cleaned_data['tool']
-                    TransportTools.objects.create(transport=transport_order, tool=tool)
-            return redirect('home')  # Replace 'success_url' with your desired success URL
+#         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
+#             transport_order = order_form.save()
+#             for form in tool_forms:
+#                 if form.cleaned_data.get('tool'):
+#                     tool = form.cleaned_data['tool']
+#                     TransportTools.objects.create(transport=transport_order, tool=tool)
+#             return redirect('home')  # Replace 'success_url' with your desired success URL
 
-        return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
+#         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
 
 # class TransportOrderView(View):
@@ -128,20 +128,27 @@ class TransportOrderView(View):
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import TransportOrder
-# from .serializers import TransportOrderSerializer, TransportToolsSerializer
+from .serializers import TransportOrderSerializer, TransportToolsSerializer
 
-# class TransportOrderView(APIView):
-#     def get(self, request):
-#         orders = TransportOrder.objects.all()
-#         serializer = TransportOrderSerializer(orders, many=True)
-#         return Response(serializer.data)
+class TransportOrderView(APIView):
+    def get(self, request):
+        orders = TransportOrder.objects.all()
+        serializer = TransportOrderSerializer(orders, many=True)
+        return Response(serializer.data)
 
-#     def post(self, request):
-#         serializer = TransportOrderSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({'success': True})
-#         return Response(serializer.errors, status=400)
+    def post(self, request):
+        order_serializer = TransportOrderSerializer(data=request.data)
+        if order_serializer.is_valid():
+            transport_order = order_serializer.save()
+            tools_serializer = TransportToolsSerializer(data=request.data.get('tools'), many=True)
+            if tools_serializer.is_valid():
+                tools_serializer.save(transport=transport_order)
+                return Response({'success': True})
+            else:
+                transport_order.delete()  # Rollback if tools data is invalid
+                return Response(tools_serializer.errors, status=400)
+        else:
+            return Response(order_serializer.errors, status=400)
 
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
 from .models import ServiceOrder, ServiceTools
