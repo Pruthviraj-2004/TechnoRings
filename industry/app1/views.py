@@ -1,9 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render,  redirect
 from django.views import View
-from .forms import DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm, TransportToolsForm
+from .forms import DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
 from .models import ServiceOrder, ServiceTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
+from django.http import JsonResponse
+
 
 
 
@@ -73,9 +75,6 @@ from django.urls import reverse_lazy
 def home(request):
     return render(request, 'app1/home.html')
 
-from django.shortcuts import render, redirect
-from .forms import TransportOrderForm, TransportToolsForm
-from .models import TransportOrder
 
 class TransportOrderView(View):
     def get(self, request):
@@ -96,6 +95,53 @@ class TransportOrderView(View):
             return redirect('home')  # Replace 'success_url' with your desired success URL
 
         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
+
+
+# class TransportOrderView(View):
+#     def get(self, request):
+#         order_form = TransportOrderForm()
+#         tool_forms = [TransportToolsForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
+#         data = {
+#             'order_form': order_form.data,
+#             'tool_forms': [form.data for form in tool_forms]
+#         }
+#         return JsonResponse(data)
+
+#     def post(self, request):
+#         order_form = TransportOrderForm(request.POST)
+#         tool_forms = [TransportToolsForm(request.POST, prefix=str(x)) for x in range(3)]  # Adjust the range as needed
+
+#         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
+#             transport_order = order_form.save()
+#             for form in tool_forms:
+#                 if form.cleaned_data.get('tool'):
+#                     tool = form.cleaned_data['tool']
+#                     TransportTools.objects.create(transport=transport_order, tool=tool)
+#             return JsonResponse({'success': True})  # Return success response as JSON
+
+#         errors = {
+#             'order_form_errors': order_form.errors,
+#             'tool_form_errors': [form.errors for form in tool_forms]
+#         }
+#         return JsonResponse(errors, status=400)  # Return errors as JSON with status code 400
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import TransportOrder
+# from .serializers import TransportOrderSerializer, TransportToolsSerializer
+
+# class TransportOrderView(APIView):
+#     def get(self, request):
+#         orders = TransportOrder.objects.all()
+#         serializer = TransportOrderSerializer(orders, many=True)
+#         return Response(serializer.data)
+
+#     def post(self, request):
+#         serializer = TransportOrderSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response({'success': True})
+#         return Response(serializer.errors, status=400)
 
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
 from .models import ServiceOrder, ServiceTools
@@ -125,6 +171,39 @@ class ServiceOrderView(View):
         # Handle invalid forms
         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
+# class ServiceOrderView(View):
+#     def get(self, request):
+#         order_form = AnotherServiceOrderForm()
+#         tool_forms = [AnotherServiceToolForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
+
+#         data = {
+#             'order_form': order_form.data,
+#             'tool_forms': [form.data for form in tool_forms]
+#         }
+
+#         return JsonResponse(data)
+
+#     def post(self, request):
+#         order_form = AnotherServiceOrderForm(request.POST)
+#         tool_forms = [AnotherServiceToolForm(request.POST, prefix=str(x)) for x in range(3)]
+
+#         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
+#             service_order = order_form.save()
+#             vendor_id = request.POST.get('vendor')
+
+#             for form in tool_forms:
+#                 if form.cleaned_data.get('tool'):
+#                     tool = form.cleaned_data['tool']
+#                     ServiceTools.objects.create(service=service_order, tool=tool, vendor_id=vendor_id)
+
+#             return JsonResponse({'success': True})
+
+#         errors = {
+#             'order_form_errors': order_form.errors,
+#             'tool_form_errors': [form.errors for form in tool_forms]
+#         }
+#         return JsonResponse(errors, status=400)
+
 class GenerateBillView(View):
     def get(self, request):
         service_tools = ServiceTools.objects.all()
@@ -140,7 +219,27 @@ class GenerateBillView(View):
                 total_amount += amount
                 bill_items.append({'tool': tool, 'cost': cost, 'amount': amount})
         return render(request, 'app1/generate_bill.html', {'bill_items': bill_items, 'total_amount': total_amount})
-    
+
+# class GenerateBillView(View):
+#     def get(self, request):
+#         service_tools = ServiceTools.objects.all()
+#         bill_items = []
+#         total_amount = 0
+#         for service_tool in service_tools:
+#             tool = service_tool.tool
+#             vendor = service_tool.vendor
+#             vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+#             for vendor_handle in vendor_handles:
+#                 cost = vendor_handle.cost
+#                 amount = 1 * cost  # Assuming each tool has a count of 1
+#                 total_amount += amount
+#                 bill_items.append({'tool': tool.name, 'cost': cost, 'amount': amount})  # Assuming tool has a 'name' attribute
+#         data = {
+#             'bill_items': bill_items,
+#             'total_amount': total_amount
+#         }
+#         return JsonResponse(data)
+
 class CreateDeliveryChallanView(View):
     def get(self, request):
         delivery_challan_form = DeliveryChallanForm()
