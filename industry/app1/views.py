@@ -344,3 +344,10 @@ class InstrumentTransportHistoryView(View):
         transport_history = TransportTools.objects.filter(tool=instrument)
     
         return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})
+
+class InstrumentServiceHistoryView(View):
+    def get(self, request, instrument_id):
+        instrument = InstrumentModel.objects.get(pk=instrument_id)
+        service_history = ServiceTools.objects.filter(tool=instrument)
+    
+        return render(request, 'app1/instrument_service_history.html', {'instrument': instrument, 'service_history': service_history})
