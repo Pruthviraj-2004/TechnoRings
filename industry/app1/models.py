@@ -59,18 +59,18 @@ class ShedTools(models.Model):
     def __str__(self):
         return f"{self.using_tool.instrument_name} in {self.shed.name}"
   
-class ToolMovement(models.Model):
-    movement_id = models.AutoField(primary_key=True)
-    movement_date = models.DateField()
-    tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING) 
-    source_shed = models.ForeignKey(ShedDetails, related_name='tool_movement_source_shed', on_delete=models.DO_NOTHING)
-    destination_shed = models.ForeignKey(ShedDetails, related_name='tool_movement_destination', on_delete=models.DO_NOTHING)
-    acknowledgment = models.BooleanField(default=False)
-    tool_count = models.IntegerField()
-    instrument_name = models.ForeignKey(InstrumentModel, on_delete=models.DO_NOTHING)
+# class ToolMovement(models.Model):
+#     movement_id = models.AutoField(primary_key=True)
+#     movement_date = models.DateField()
+#     tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING) 
+#     source_shed = models.ForeignKey(ShedDetails, related_name='tool_movement_source_shed', on_delete=models.DO_NOTHING)
+#     destination_shed = models.ForeignKey(ShedDetails, related_name='tool_movement_destination', on_delete=models.DO_NOTHING)
+#     acknowledgment = models.BooleanField(default=False)
+#     tool_count = models.IntegerField()
+#     instrument_name = models.ForeignKey(InstrumentModel, on_delete=models.DO_NOTHING)
 
-    def __str__(self):
-        return f"Movement ID: {self.movement_id} - Date: {self.movement_date}"
+#     def __str__(self):
+#         return f"Movement ID: {self.movement_id} - Date: {self.movement_date}"
 
 class ServiceOrder(models.Model):
     service_id = models.AutoField(primary_key=True)
@@ -158,5 +158,12 @@ class DeliveryChallanTools(models.Model):
 
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan.deliverychallan_id} - Tool ID: {self.tool.instrument_no}"
+
+# class InstrumentTransportHistory(models.Model):
+#     instrument = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
+#     movement = models.ForeignKey(TransportOrder, on_delete=models.CASCADE)
+    
+#     def __str__(self):
+#         return f"Instrument: {self.instrument.instrument_no} - Movement ID: {self.movement.movement_id}"
 
   

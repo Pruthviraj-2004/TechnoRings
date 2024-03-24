@@ -1,7 +1,7 @@
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
-from .models import CalibrationReport, InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+from .models import CalibrationReport, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -331,3 +331,16 @@ class DeliveryChallanView(View):
                         calibration_report.save()
             return redirect('home')
         return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset})
+    
+# class InstrumentTransportHistoryView(View):
+#     def get(self, request, instrument_id):
+#         instrument = InstrumentModel.objects.get(pk=instrument_id)
+#         transport_history = InstrumentTransportHistory.objects.filter(instrument=instrument)
+#         return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})
+    
+class InstrumentTransportHistoryView(View):
+    def get(self, request, instrument_id):
+        instrument = InstrumentModel.objects.get(pk=instrument_id)
+        transport_history = TransportTools.objects.filter(tool=instrument)
+    
+        return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})

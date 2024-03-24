@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ShedDetails, ShedTools, ToolMovement, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles
+from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ShedDetails, ShedTools, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles
 
 
 @admin.register(InstrumentGroupMaster)
@@ -38,11 +38,11 @@ class ShedToolsAdmin(admin.ModelAdmin):
     list_filter = ('shed', 'using_tool')
     search_fields = ('shed__name', 'using_tool__instrument_name')
 
-@admin.register(ToolMovement)
-class ToolMovementAdmin(admin.ModelAdmin):
-    list_display = ('movement_id', 'movement_date', 'tool', 'source_shed', 'destination_shed', 'acknowledgment', 'tool_count', 'instrument_name')
-    list_filter = ('movement_date', 'source_shed', 'destination_shed', 'acknowledgment')
-    search_fields = ('movement_id', 'tool__tool_group_name', 'source_shed__name', 'destination_shed__name', 'instrument_name__instrument_name')
+# @admin.register(ToolMovement)
+# class ToolMovementAdmin(admin.ModelAdmin):
+#     list_display = ('movement_id', 'movement_date', 'tool', 'source_shed', 'destination_shed', 'acknowledgment', 'tool_count', 'instrument_name')
+#     list_filter = ('movement_date', 'source_shed', 'destination_shed', 'acknowledgment')
+#     search_fields = ('movement_id', 'tool__tool_group_name', 'source_shed__name', 'destination_shed__name', 'instrument_name__instrument_name')
 
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(admin.ModelAdmin):
@@ -102,4 +102,9 @@ class CalibrationAdmin(admin.ModelAdmin):
     list_display = ('calibrationtool_id', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_tool')
     list_filter = ('calibration_date', 'calibration_agency', 'action')
     search_fields = ('calibration_report_no', 'calibration_agency')
-    
+
+# @admin.register(InstrumentTransportHistory)
+# class InstrumentTransportHistoryAdmin(admin.ModelAdmin):
+#     list_display = ('instrument', 'movement')
+#     list_filter = ('movement__source_shed', 'movement__destination_shed')
+#     search_fields = ('instrument__instrument_no', 'movement__movement_id')    
