@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import GenerateBillView,  ServiceOrderView, TransportOrderView#, ServiceOrderClass, ServiceToolsClass, TransportMovementOrderClass,TransportToolsClass
+from .views import GenerateBillView, InstrumentToolsView,  ServiceOrderView, ShedDetailsView, ShedToolsView, TransportOrderView, VendorHandlesView#, ServiceOrderClass, ServiceToolsClass, TransportMovementOrderClass,TransportToolsClass
 from . import views
 
 urlpatterns = [
@@ -15,6 +15,10 @@ urlpatterns = [
     #path('create_delivery_challan/', views.CreateDeliveryChallanView.as_view(), name='create_delivery_challan'),
     path('delivery_challan/', views.DeliveryChallanView.as_view(), name='delivery_challan'),
 
+    path('instrument-tools/', InstrumentToolsView.as_view(), name='instrument_tools'),
+    path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
+    path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
+    path('vendor-handles/', VendorHandlesView.as_view(), name='vendor_handles'),
 
 
 ]

@@ -57,3 +57,18 @@ class VendorHandlesSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorHandles
         fields = '__all__'
+
+class DeliveryChallanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorHandles
+        fields = '__all__'
+
+class CalibrationReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorHandles
+        fields = '__all__'
+
+class DeliveryChallanToolsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorHandles
+        fields = '__all__'        

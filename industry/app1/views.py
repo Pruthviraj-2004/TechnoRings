@@ -1,14 +1,71 @@
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
-from .models import InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
-from django.views.generic.edit import CreateView
-from django.urls import reverse_lazy
-from django.http import JsonResponse
+from .models import CalibrationReport, InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import TransportOrder
+from .serializers import CalibrationReportSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
 
+from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
+from .models import ServiceOrder, ServiceTools
 
+class InstrumentToolsView(APIView):
+    def get(self, request):
+        instruments = InstrumentModel.objects.all()
+        instrument_serializer = InstrumentModelSerializer(instruments, many=True)
 
+        response_data = {
+            'instrument_models': instrument_serializer.data,
+        }
+
+        return Response(response_data)
+    
+class ShedDetailsView(APIView):
+    def get(self, request):
+        shed_details = ShedDetails.objects.all()
+        shed_serializer = ShedDetailsSerializer(shed_details, many=True)
+
+        response_data = {
+            'shed_details' : shed_serializer.data,
+        }
+
+        return Response(response_data)
+
+class ShedToolsView(APIView):
+    def get(self, request):
+        shed_tools_details = ShedTools.objects.all()
+        shed_tools_serializer = ShedToolsSerializer(shed_tools_details, many=True)
+
+        response_data = {
+            'shed_tools_details' : shed_tools_serializer.data,
+        }
+
+        return Response(response_data)
+
+class VendorHandlesView(APIView):
+    def get(self, request):
+        vendor_handles = VendorHandles.objects.all()
+        vendor_handles_serializer = VendorHandlesSerializer(vendor_handles, many=True)
+
+        response_data = {
+            'vendor_handles' : vendor_handles_serializer.data,
+        }
+
+        return Response(response_data)
+    
+class CalibrationReportView(APIView):
+    def get(self, request):
+        calibration_report = CalibrationReport.objects.all()
+        calibration_report_serializer = CalibrationReportSerializer(calibration_report, many=True)
+
+        response_data = {
+            'calibration_report' : calibration_report_serializer.data,
+        }
+
+        return Response(response_data)
+        
 # class TransportMovementOrderClass(View):
 #     def get(self, request):
 #         form = TransportMovementOrderForm()
@@ -97,10 +154,6 @@ def home(request):
 
 #         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from .models import TransportOrder
-from .serializers import InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorSerializer
 
 class TransportOrderView(APIView):
     def get(self, request):
@@ -138,9 +191,6 @@ class TransportOrderView(APIView):
                 return Response(tools_serializer.errors, status=400)
         else:
             return Response(order_serializer.errors, status=400)
-
-from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
-from .models import ServiceOrder, ServiceTools
 
 # class ServiceOrderView(View):
 #     def get(self, request):
