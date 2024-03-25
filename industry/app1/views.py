@@ -1,8 +1,9 @@
+from django.http import JsonResponse
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
 from .models import CalibrationReport, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
-
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import TransportOrder
@@ -154,6 +155,9 @@ def home(request):
 
 #         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
 
 class TransportOrderView(APIView):
     def get(self, request):
@@ -178,19 +182,64 @@ class TransportOrderView(APIView):
 
         return Response(response_data)
 
+    # def post(self, request):
+    # # Deserialize the received data
+    #     serializer = TransportOrderSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         # Extract relevant data from the request
+    #         movement_date = serializer.validated_data['movement_date']
+    #         source_shed = serializer.validated_data['source_shed']
+    #         destination_shed = serializer.validated_data['destination_shed']
+    #         tool_count = serializer.validated_data['tool_count']
+    #         acknowledgment = serializer.validated_data.get('acknowledgment', False)
+
+    #         # Create the transport order
+    #         transport_order = TransportOrder.objects.create(
+    #             movement_date=movement_date,
+    #             source_shed=source_shed,
+    #             destination_shed=destination_shed,
+    #             tool_count=tool_count,
+    #             acknowledgment=acknowledgment
+    #         )
+
+    #         return JsonResponse({'success': True}, status=201)
+    #     else:
+    #         return JsonResponse(serializer.errors, status=400)
+
     def post(self, request):
-        order_serializer = TransportOrderSerializer(data=request.data)
-        if order_serializer.is_valid():
-            transport_order = order_serializer.save()
-            tools_serializer = TransportToolsSerializer(data=request.data.get('tools'), many=True)
-            if tools_serializer.is_valid():
-                tools_serializer.save(transport=transport_order)
-                return Response({'success': True})
-            else:
-                transport_order.delete()  
-                return Response(tools_serializer.errors, status=400)
+        # Deserialize the received data
+        serializer = TransportOrderSerializer(data=request.data)
+        if serializer.is_valid():
+            # Extract relevant data from the request
+            movement_date = serializer.validated_data['movement_date']
+            source_shed_id = serializer.validated_data['source_shed']
+            destination_shed_id = serializer.validated_data['destination_shed']
+            tool_count = serializer.validated_data['tool_count']
+            acknowledgment = serializer.validated_data.get('acknowledgment', False)
+            tools_data = request.data.get('tools', [])
+
+            # Retrieve source and destination shed objects
+            # source_shed = get_object_or_404(ShedDetails, pk=source_shed_id)
+            # destination_shed = get_object_or_404(ShedDetails, pk=destination_shed_id)
+
+            # Create the transport order
+            transport_order = TransportOrder.objects.create(
+                movement_date=movement_date,
+                source_shed=source_shed_id,
+                destination_shed=destination_shed_id,
+                tool_count=tool_count,
+                acknowledgment=acknowledgment
+            )
+
+            # Create tools associated with the transport order
+            for tool_data in tools_data:
+                tool_id = tool_data.get('tool')
+                tool = get_object_or_404(InstrumentModel, pk=tool_id)
+                TransportTools.objects.create(transport=transport_order, tool=tool)
+
+            return JsonResponse({'success': True}, status=status.HTTP_201_CREATED)
         else:
-            return Response(order_serializer.errors, status=400)
+            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class ServiceOrderView(View):
 #     def get(self, request):
@@ -216,7 +265,6 @@ class TransportOrderView(APIView):
 
 #         # Handle invalid forms
 #         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
-
 
 class ServiceOrderView(APIView):
     def get(self, request):

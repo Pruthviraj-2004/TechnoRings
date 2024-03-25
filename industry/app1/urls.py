@@ -19,6 +19,7 @@ urlpatterns = [
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
     path('vendor-handles/', VendorHandlesView.as_view(), name='vendor_handles'),
+    
     path('instrument-transport-history/<int:instrument_id>/', InstrumentTransportHistoryView.as_view(), name='instrument_transport_history'),
     path('instrument-service-history/<int:instrument_id>/', InstrumentServiceHistoryView.as_view(), name='instrument_service_history'),
 
