@@ -12,6 +12,20 @@ from .serializers import CalibrationReportSerializer, InstrumentModelSerializer,
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
 from .models import ServiceOrder, ServiceTools
 
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
+class VendorView(APIView):
+    def get(self, request):
+        vendor = Vendor.objects.all()
+        vendor_serializer = VendorSerializer(vendor, many=True)
+
+        response_data = {
+            'vendor' : vendor_serializer.data,
+        }
+
+        return Response(response_data)
+    
 class InstrumentToolsView(APIView):
     def get(self, request):
         instruments = InstrumentModel.objects.all()
@@ -155,10 +169,6 @@ def home(request):
 
 #         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-from django.db import transaction
-from django.shortcuts import get_object_or_404
-
-
 class TransportOrderView(APIView):
     def get(self, request):
         orders_details = TransportOrder.objects.all()
@@ -266,45 +276,135 @@ class TransportOrderView(APIView):
 #         # Handle invalid forms
 #         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-class ServiceOrderView(APIView):
+class ServiceOrderView(View):
     def get(self, request):
-        service_orders = ServiceOrder.objects.all()
-        service_order_serializer = ServiceOrderSerializer(service_orders, many=True)
+        order_form = AnotherServiceOrderForm()
+        tool_forms = [AnotherServiceToolForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
 
-        service_tools = ServiceTools.objects.all()
-        service_tools_serializer = ServiceToolsSerializer(service_tools, many=True)
-
-        vendors = Vendor.objects.all()
-        vendor_serializer = VendorSerializer(vendors, many=True)
-
-        instrument_models = InstrumentModel.objects.all()
-        instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
-
-        response_data = {
-            'service_orders': service_order_serializer.data,
-            'service_tools': service_tools_serializer.data,
-            'vendors': vendor_serializer.data,
-            'instrument_tools' : instrument_serializer.data,
-        }
-
-        return Response(response_data)
+        return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
     def post(self, request):
-        order_serializer = ServiceOrderSerializer(data=request.data)
-        if order_serializer.is_valid():
-            service_order = order_serializer.save()
-            tools_serializer = ServiceToolsSerializer(data=request.data.get('tools'), many=True)
-            if tools_serializer.is_valid():
-                tools_serializer.save(service=service_order)
-                return Response({'success': True})
-            else:
-                service_order.delete()  
-                return Response(tools_serializer.errors, status=400)
-        else:
-            return Response(order_serializer.errors, status=400)
+        order_form = AnotherServiceOrderForm(request.POST)
+        tool_forms = [AnotherServiceToolForm(request.POST, prefix=str(x)) for x in range(3)]
+
+        if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
+            service_order = order_form.save()
+            vendor_id = request.POST.get('vendor')  # Get the vendor ID from the form
+
+            for form in tool_forms:
+                if form.cleaned_data.get('tool'):
+                    tool = form.cleaned_data['tool']
+                    ServiceTools.objects.create(service=service_order, tool=tool, vendor_id=vendor_id)  # Pass vendor_id to create ServiceTools
+
+            # Redirect to GenerateBillView with the created service order ID
+            return redirect('generate_bill', service_order_id=service_order.service_id)
+
+        # Handle invalid forms
+        return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
+
+# class ServiceOrderView(APIView):
+#     def get(self, request):
+#         service_orders = ServiceOrder.objects.all()
+#         service_order_serializer = ServiceOrderSerializer(service_orders, many=True)
+
+#         service_tools = ServiceTools.objects.all()
+#         service_tools_serializer = ServiceToolsSerializer(service_tools, many=True)
+
+#         vendors = Vendor.objects.all()
+#         vendor_serializer = VendorSerializer(vendors, many=True)
+
+#         instrument_models = InstrumentModel.objects.all()
+#         instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
+
+#         response_data = {
+#             'service_orders': service_order_serializer.data,
+#             'service_tools': service_tools_serializer.data,
+#             'vendors': vendor_serializer.data,
+#             'instrument_tools' : instrument_serializer.data,
+#         }
+
+#         return Response(response_data)
+
+#     # def post(self, request):
+#     #     # Serialize the incoming data
+#     #     order_serializer = ServiceOrderSerializer(data=request.data)
+        
+#     #     # Check if the incoming data is valid
+#     #     if order_serializer.is_valid():
+#     #         # Save the service order
+#     #         service_order = order_serializer.save()
+
+#     #         # Retrieve and validate the list of tools
+#     #         tools_data = request.data.get('tools', [])
+#     #         tools_serializer = ServiceToolsSerializer(data=tools_data, many=True)
+            
+#     #         if tools_serializer.is_valid():
+#     #             # Save the tools associated with the service order
+#     #             for tool_data in tools_data:
+#     #                 tool_id = tool_data.get('tool')
+#     #                 tool = get_object_or_404(InstrumentModel, pk=tool_id)
+#     #                 ServiceTools.objects.create(service=service_order, tool=tool)
+
+#     #             # Return success response
+#     #             return Response({'success': True}, status=status.HTTP_201_CREATED)
+#     #         else:
+#     #             # If tool data is not valid, delete the service order
+#     #             service_order.delete()
+#     #             return Response(tools_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     #     else:
+#     #         # Return error response if service order data is not valid
+#     #         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     def post(self, request):
+#         # Serialize the incoming data
+#         order_serializer = ServiceOrderSerializer(data=request.data)
+        
+#         # Check if the incoming data is valid
+#         if order_serializer.is_valid():
+#             # Save the service order
+#             service_order = order_serializer.save()
+
+#             # Retrieve and validate the list of tools
+#             tools_data = request.data.get('tools', [])
+#             for tool_data in tools_data:
+#                 # Retrieve the tool and vendor objects
+#                 tool_id = tool_data.get('tool')
+#                 vendor_id = tool_data.get('vendor')
+#                 tool = get_object_or_404(InstrumentModel, pk=tool_id)
+#                 vendor = get_object_or_404(Vendor, pk=vendor_id)
+
+#                 # Create the ServiceTools instance with proper vendor
+#                 ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor)
+
+#             # Return success response
+#             return Response({'success': True}, status=status.HTTP_201_CREATED)
+#         else:
+#             # Return error response if service order data is not valid
+#             return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class GenerateBillView(View):
+#     def get(self, request):
+#         service_tools = ServiceTools.objects.all()
+#         bill_items = []
+#         total_amount = 0
+#         for service_tool in service_tools:
+#             tool = service_tool.tool
+#             vendor = service_tool.vendor
+#             vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+#             for vendor_handle in vendor_handles:
+#                 cost = vendor_handle.cost
+#                 amount = 1 * cost  # Assuming each tool has a count of 1
+#                 total_amount += amount
+#                 bill_items.append({'tool': tool, 'cost': cost, 'amount': amount})
+#         return render(request, 'app1/generate_bill.html', {'bill_items': bill_items, 'total_amount': total_amount})
+    
 class GenerateBillView(View):
-    def get(self, request):
-        service_tools = ServiceTools.objects.all()
+    def get(self, request, service_order_id):
+        # Retrieve the service order
+        service_order = get_object_or_404(ServiceOrder, pk=service_order_id)
+        
+        # Now you can generate the bill for the given service order and render the template
+        # with the bill items and total amount
+        service_tools = ServiceTools.objects.filter(service=service_order)
         bill_items = []
         total_amount = 0
         for service_tool in service_tools:
@@ -316,6 +416,7 @@ class GenerateBillView(View):
                 amount = 1 * cost  # Assuming each tool has a count of 1
                 total_amount += amount
                 bill_items.append({'tool': tool, 'cost': cost, 'amount': amount})
+        
         return render(request, 'app1/generate_bill.html', {'bill_items': bill_items, 'total_amount': total_amount})
 
 # class GenerateBillView(View):
@@ -360,32 +461,40 @@ class DeliveryChallanView(View):
     def get(self, request):
         delivery_challan_form = DeliveryChallanForm()
         delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
-        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset})
+        calibration_report_form = CalibrationReportForm()  # Include CalibrationReportForm
+        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
 
     def post(self, request):
         delivery_challan_form = DeliveryChallanForm(request.POST)
         delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
-        if delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
-            delivery_challan = delivery_challan_form.save()
-            for form in delivery_challan_tools_formset:
-                if form.is_valid():
-                    tool_instance = form.save(commit=False)
-                    tool_instance.deliverychallan = delivery_challan
-                    tool_instance.save()
-                    calibration_report_form = CalibrationReportForm(request.POST)
-                    if calibration_report_form.is_valid():
-                        calibration_report = calibration_report_form.save(commit=False)
-                        calibration_report.calibration_tool = tool_instance.tool
-                        calibration_report.save()
-            return redirect('home')
-        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset})
-    
-# class InstrumentTransportHistoryView(View):
-#     def get(self, request, instrument_id):
-#         instrument = InstrumentModel.objects.get(pk=instrument_id)
-#         transport_history = InstrumentTransportHistory.objects.filter(instrument=instrument)
-#         return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})
-    
+        calibration_report_form = CalibrationReportForm(request.POST)
+
+        if calibration_report_form.is_valid():
+            # Store calibration report details
+            calibration_report = calibration_report_form.save(commit=False)
+            
+            # Set the calibration_tool_id programmatically
+            calibration_report.calibration_tool_id = 1  # Replace <some_tool_id> with the actual ID
+            
+            calibration_report.save()
+            
+            if delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+                # Store delivery challan details
+                delivery_challan = delivery_challan_form.save()
+                
+                for form in delivery_challan_tools_formset:
+                    if form.is_valid():
+                        tool_instance = form.save(commit=False)
+                        tool_instance.deliverychallan = delivery_challan
+                        tool_instance.save()
+                        # Associate the calibration report with the delivery challan tool
+                        tool_instance.calibration_report = calibration_report
+                        tool_instance.save() 
+                        
+                return redirect('home')
+
+        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
+
 class InstrumentTransportHistoryView(View):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)

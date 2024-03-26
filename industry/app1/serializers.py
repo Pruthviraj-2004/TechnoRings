@@ -26,14 +26,15 @@ class ShedToolsSerializer(serializers.ModelSerializer):
         model = ShedTools
         fields = '__all__'
 
-class ServiceOrderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ServiceOrder
-        fields = '__all__'
-
 class ServiceToolsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceTools
+        fields = '__all__'
+        
+class ServiceOrderSerializer(serializers.ModelSerializer):
+    tools = ServiceToolsSerializer(many=True, read_only=True)
+    class Meta:
+        model = ServiceOrder
         fields = '__all__'
 
 class TransportToolsSerializer(serializers.ModelSerializer):
@@ -42,7 +43,7 @@ class TransportToolsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TransportOrderSerializer(serializers.ModelSerializer):
-    tools = TransportToolsSerializer(many=True, read_only=True)  # Assuming 'tools' is the related name for TransportTools in TransportOrder model
+    tools = TransportToolsSerializer(many=True, read_only=True)
 
     class Meta:
         model = TransportOrder

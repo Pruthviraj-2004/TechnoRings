@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import GenerateBillView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailsView, ShedToolsView, TransportOrderView, VendorHandlesView#, ServiceOrderClass, ServiceToolsClass, TransportMovementOrderClass,TransportToolsClass
+from .views import GenerateBillView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailsView, ShedToolsView, TransportOrderView, VendorHandlesView, VendorView#, ServiceOrderClass, ServiceToolsClass, TransportMovementOrderClass,TransportToolsClass
 from . import views
 
 urlpatterns = [
@@ -11,7 +11,9 @@ urlpatterns = [
     path('home/', views.home, name='home'),
     path('add-transport-order/', TransportOrderView.as_view(), name='add_transport_order'),
     path('service-order/', ServiceOrderView.as_view(), name='service-order'),
-    path('generate-bill/', GenerateBillView.as_view(), name='generate_bill'),
+    # path('generate-bill/', GenerateBillView.as_view(), name='generate_bill'),
+    path('generate_bill/<int:service_order_id>/', GenerateBillView.as_view(), name='generate_bill'),
+
     #path('create_delivery_challan/', views.CreateDeliveryChallanView.as_view(), name='create_delivery_challan'),
     path('delivery_challan/', views.DeliveryChallanView.as_view(), name='delivery_challan'),
 
@@ -19,7 +21,8 @@ urlpatterns = [
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
     path('vendor-handles/', VendorHandlesView.as_view(), name='vendor_handles'),
-    
+    path('vendor/', VendorView.as_view(), name='vendor'),
+
     path('instrument-transport-history/<int:instrument_id>/', InstrumentTransportHistoryView.as_view(), name='instrument_transport_history'),
     path('instrument-service-history/<int:instrument_id>/', InstrumentServiceHistoryView.as_view(), name='instrument_service_history'),
 

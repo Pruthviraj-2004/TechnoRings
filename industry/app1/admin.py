@@ -93,7 +93,7 @@ class DeliveryChallanAdmin(admin.ModelAdmin):
 
 @admin.register(DeliveryChallanTools)
 class DeliveryChallanToolsAdmin(admin.ModelAdmin):
-    list_display = ('deliverychallantool_id', 'deliverychallan', 'tool')
+    list_display = ('deliverychallantool_id', 'deliverychallan', 'tool','calibration_report')
     list_filter = ('deliverychallan__vendor',)
     search_fields = ('deliverychallan__vendor__name',)
 

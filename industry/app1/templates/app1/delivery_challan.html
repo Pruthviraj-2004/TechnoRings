@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% comment %} <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -43,25 +43,98 @@
             </thead>
             <tbody>
                 {% for form in delivery_challan_tools_formset %}
-                {% comment %} <tr>
-                    <td>{{ form.tool }}</td>
-                    <td>{{ form.calibration_report_form.calibration_date }}</td>
-                    <td>{{ form.calibration_report_form.calibration_report_no }}</td>
-                    <td>{{ form.calibration_report_form.calibration_agency }}</td>
-                    <td>{{ form.calibration_report_form.result }}</td>
-                    <td>{{ form.calibration_report_form.action }}</td>
-                    <td>{{ form.calibration_report_form.next_calibration_date }}</td>
-                    <td>{{ form.calibration_report_form.remark }}</td>
-                </tr> {% endcomment %}
                 <tr>
                     <td>{{ form.tool }}</td>
-                    <td><input type="date" name="form-{{ form.prefix }}-calibration_date" value="{{ form.calibration_report_form.calibration_date.value }}"></td>
-                    <td><input type="text" name="form-{{ form.prefix }}-calibration_report_no" value="{{ form.calibration_report_form.calibration_report_no.value }}"></td>
-                    <td><input type="text" name="form-{{ form.prefix }}-calibration_agency" value="{{ form.calibration_report_form.calibration_agency.value }}"></td>
-                    <td><input type="number" name="form-{{ form.prefix }}-result" step="0.0001" value="{{ form.calibration_report_form.result.value }}"></td>
-                    <td><input type="text" name="form-{{ form.prefix }}-action" value="{{ form.calibration_report_form.action.value }}"></td>
-                    <td><input type="date" name="form-{{ form.prefix }}-next_calibration_date" value="{{ form.calibration_report_form.next_calibration_date.value }}"></td>
-                    <td><input type="text" name="form-{{ form.prefix }}-remark" value="{{ form.calibration_report_form.remark.value }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-calibration_date" value="{{ form.calibrationtool.calibration_date }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-calibration_report_no" value="{{ form.calibrationtool.calibration_report_no }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-calibration_agency" value="{{ form.calibrationtool.calibration_agency }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-result"  value="{{ form.calibrationtool.result }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-action" value="{{ form.calibrationtool.action }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-next_calibration_date" value="{{ form.calibrationtool.next_calibration_date }}"></td>
+                    <td><input type="text" name="form-{{ form.prefix }}-remark" value="{{ form.calibrationtool.remark }}"></td>
+                </tr>
+                {% endfor %}
+            </tbody>            
+        </table>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html> {% endcomment %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Delivery Challan</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Delivery Challan</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ delivery_challan_form.as_p }}
+        
+        <h2>Calibration Details</h2>
+        <table>
+            <tbody>
+                <tr>
+                    <td>Calibration Date:</td>
+                    <td><input type="text" name="calibration_date"></td>
+                </tr>
+                <tr>
+                    <td>Calibration Report No:</td>
+                    <td><input type="text" name="calibration_report_no"></td>
+                </tr>
+                <tr>
+                    <td>Calibration Agency:</td>
+                    <td><input type="text" name="calibration_agency"></td>
+                </tr>
+                <tr>
+                    <td>Result:</td>
+                    <td><input type="text" name="result"></td>
+                </tr>
+                <tr>
+                    <td>Action:</td>
+                    <td><input type="text" name="action"></td>
+                </tr>
+                <tr>
+                    <td>Next Calibration Date:</td>
+                    <td><input type="text" name="next_calibration_date"></td>
+                </tr>
+                <tr>
+                    <td>Remark:</td>
+                    <td><input type="text" name="remark"></td>
+                </tr>
+            </tbody>
+        </table>
+    
+        <h2>Tool Details</h2>
+        {{ delivery_challan_tools_formset.management_form }}
+        <table>
+            <thead>
+                <tr>
+                    <th>Tool</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form in delivery_challan_tools_formset %}
+                <tr>
+                    <td>{{ form.tool }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

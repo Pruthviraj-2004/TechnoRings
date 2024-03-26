@@ -155,6 +155,7 @@ class DeliveryChallanTools(models.Model):
     deliverychallantool_id = models.AutoField(primary_key=True)
     deliverychallan = models.ForeignKey(DeliveryChallan, on_delete=models.DO_NOTHING)
     tool = models.ForeignKey(InstrumentModel, on_delete=models.DO_NOTHING)
+    calibration_report = models.ForeignKey(CalibrationReport, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan.deliverychallan_id} - Tool ID: {self.tool.instrument_no}"
