@@ -16,14 +16,18 @@ class InstrumentModelSerializer(serializers.ModelSerializer):
         model = InstrumentModel
         fields = '__all__'
 
-class ShedDetailsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ShedDetails
-        fields = '__all__'
-
 class ShedToolsSerializer(serializers.ModelSerializer):
+    using_tool = InstrumentModelSerializer()
+
     class Meta:
         model = ShedTools
+        fields = '__all__'
+
+class ShedDetailsSerializer(serializers.ModelSerializer):
+    shed_tools = ShedToolsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ShedDetails
         fields = '__all__'
 
 class ServiceToolsSerializer(serializers.ModelSerializer):
@@ -54,10 +58,18 @@ class VendorSerializer(serializers.ModelSerializer):
         model = Vendor
         fields = '__all__'
 
+# class VendorHandlesSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = VendorHandles
+#         fields = '__all__'
+
 class VendorHandlesSerializer(serializers.ModelSerializer):
+    tool_name = serializers.CharField(source='tool.instrument_name', read_only=True)
+
     class Meta:
         model = VendorHandles
-        fields = '__all__'
+        fields = ['vendorhandle_id', 'turnaround_time', 'cost', 'vendor', 'tool', 'tool_name']
+
 
 class DeliveryChallanSerializer(serializers.ModelSerializer):
     class Meta:

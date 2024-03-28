@@ -58,42 +58,6 @@ class ShedTools(models.Model):
 
     def __str__(self):
         return f"{self.using_tool.instrument_name} in {self.shed.name}"
-  
-# class ToolMovement(models.Model):
-#     movement_id = models.AutoField(primary_key=True)
-#     movement_date = models.DateField()
-#     tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING) 
-#     source_shed = models.ForeignKey(ShedDetails, related_name='tool_movement_source_shed', on_delete=models.DO_NOTHING)
-#     destination_shed = models.ForeignKey(ShedDetails, related_name='tool_movement_destination', on_delete=models.DO_NOTHING)
-#     acknowledgment = models.BooleanField(default=False)
-#     tool_count = models.IntegerField()
-#     instrument_name = models.ForeignKey(InstrumentModel, on_delete=models.DO_NOTHING)
-
-#     def __str__(self):
-#         return f"Movement ID: {self.movement_id} - Date: {self.movement_date}"
-
-class ServiceOrder(models.Model):
-    service_id = models.AutoField(primary_key=True)
-    date = models.DateField()
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.CharField(max_length=100)
-    tool_count = models.IntegerField()
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"Service ID: {self.service_id}"
-
-class ServiceTools(models.Model):
-    servicetool_id = models.AutoField(primary_key=True)
-    service = models.ForeignKey(ServiceOrder, on_delete=models.DO_NOTHING)
-    tool = models.ForeignKey(InstrumentModel, on_delete=models.DO_NOTHING)
-    vendor = models.ForeignKey(Vendor, on_delete=models.DO_NOTHING)  # Add this field
-
-    def __str__(self):
-        return f"Service ID: {self.service.service_id} - Tool ID: {self.tool.instrument_no} - Service Vendor: {self.vendor}"
-
-    class Meta:
-        unique_together = ('service', 'tool', 'vendor')
 
 class TransportOrder(models.Model):
     movement_id = models.AutoField(primary_key=True)
@@ -116,7 +80,30 @@ class TransportTools(models.Model):
 
     def __str__(self):
         return f"TransportTool ID: {self.transporttool_id} - Transport ID: {self.transport.movement_id} - Tool ID: {self.tool.instrument_no}"
-   
+ 
+class ServiceOrder(models.Model):
+    service_id = models.AutoField(primary_key=True)
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=100)
+    tool_count = models.IntegerField()
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Service ID: {self.service_id}"
+
+class ServiceTools(models.Model):
+    servicetool_id = models.AutoField(primary_key=True)
+    service = models.ForeignKey(ServiceOrder, on_delete=models.DO_NOTHING)
+    tool = models.ForeignKey(InstrumentModel, on_delete=models.DO_NOTHING)
+    vendor = models.ForeignKey(Vendor, on_delete=models.DO_NOTHING)  # Add this field
+
+    def __str__(self):
+        return f"Service ID: {self.service.service_id} - Tool ID: {self.tool.instrument_no} - Service Vendor: {self.vendor}"
+
+    class Meta:
+        unique_together = ('service', 'tool', 'vendor')
+  
 class VendorHandles(models.Model):
     vendorhandle_id = models.AutoField(primary_key=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.DO_NOTHING)
@@ -159,12 +146,3 @@ class DeliveryChallanTools(models.Model):
 
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan.deliverychallan_id} - Tool ID: {self.tool.instrument_no}"
-
-# class InstrumentTransportHistory(models.Model):
-#     instrument = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
-#     movement = models.ForeignKey(TransportOrder, on_delete=models.CASCADE)
-    
-#     def __str__(self):
-#         return f"Instrument: {self.instrument.instrument_no} - Movement ID: {self.movement.movement_id}"
-
-  
