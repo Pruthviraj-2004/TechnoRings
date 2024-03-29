@@ -84,7 +84,6 @@ class CalibrationReportView(APIView):
 def home(request):
     return render(request, 'app1/home.html')
 
-
 # class TransportOrderView(View):
 #     def get(self, request):
 #         order_form = TransportOrderForm()
@@ -105,63 +104,122 @@ def home(request):
 
 #         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-class TransportOrderView(APIView):
-    def get(self, request):
-        orders_details = TransportOrder.objects.all()
-        orders_serializer = TransportOrderSerializer(orders_details, many=True)
+# class TransportOrderView(APIView):
+#     def get(self, request):
+#         orders_details = TransportOrder.objects.all()
+#         orders_serializer = TransportOrderSerializer(orders_details, many=True)
         
-        instrument_models = InstrumentModel.objects.all()
-        instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
+#         instrument_models = InstrumentModel.objects.all()
+#         instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
 
-        shed_details = ShedDetails.objects.all()
-        shed_serializer = ShedDetailsSerializer(shed_details, many=True)
+#         shed_details = ShedDetails.objects.all()
+#         shed_serializer = ShedDetailsSerializer(shed_details, many=True)
 
-        shed_tools_details = ShedTools.objects.all()
-        shed_tools_serializer = ShedToolsSerializer(shed_tools_details, many=True)
+#         shed_tools_details = ShedTools.objects.all()
+#         shed_tools_serializer = ShedToolsSerializer(shed_tools_details, many=True)
 
-        response_data = {
-            'transport_orders': orders_serializer.data,
-            'instrument_models': instrument_serializer.data,
-            'shed_details' : shed_serializer.data,
-            'shed_tools_details' : shed_tools_serializer.data,
-        }
+#         response_data = {
+#             'transport_orders': orders_serializer.data,
+#             'instrument_models': instrument_serializer.data,
+#             'shed_details' : shed_serializer.data,
+#             'shed_tools_details' : shed_tools_serializer.data,
+#         }
 
-        return Response(response_data)
+#         return Response(response_data)
+
+#     def post(self, request):
+#         # Deserialize the received data
+#         serializer = TransportOrderSerializer(data=request.data)
+#         if serializer.is_valid():
+#             # Extract relevant data from the request
+#             movement_date = serializer.validated_data['movement_date']
+#             source_shed_id = serializer.validated_data['source_shed']
+#             destination_shed_id = serializer.validated_data['destination_shed']
+#             tool_count = serializer.validated_data['tool_count']
+#             acknowledgment = serializer.validated_data.get('acknowledgment', False)
+#             tools_data = request.data.get('tools', [])
+
+#             # Retrieve source and destination shed objects
+#             # source_shed = get_object_or_404(ShedDetails, pk=source_shed_id)
+#             # destination_shed = get_object_or_404(ShedDetails, pk=destination_shed_id)
+
+#             # Create the transport order
+#             transport_order = TransportOrder.objects.create(
+#                 movement_date=movement_date,
+#                 source_shed=source_shed_id,
+#                 destination_shed=destination_shed_id,
+#                 tool_count=tool_count,
+#                 acknowledgment=acknowledgment
+#             )
+
+#             # Create tools associated with the transport order
+#             for tool_data in tools_data:
+#                 tool_id = tool_data.get('tool')
+#                 tool = get_object_or_404(InstrumentModel, pk=tool_id)
+#                 TransportTools.objects.create(transport=transport_order, tool=tool)
+
+#             return JsonResponse({'success': True}, status=status.HTTP_201_CREATED)
+#         else:
+#             return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TransportOrderView(View):
+    def get(self, request):
+        order_form = TransportOrderForm()
+        tool_forms = [TransportToolsForm(prefix=str(x)) for x in range(3)]  # Adjust the range as needed
+        return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
     def post(self, request):
-        # Deserialize the received data
-        serializer = TransportOrderSerializer(data=request.data)
-        if serializer.is_valid():
-            # Extract relevant data from the request
-            movement_date = serializer.validated_data['movement_date']
-            source_shed_id = serializer.validated_data['source_shed']
-            destination_shed_id = serializer.validated_data['destination_shed']
-            tool_count = serializer.validated_data['tool_count']
-            acknowledgment = serializer.validated_data.get('acknowledgment', False)
-            tools_data = request.data.get('tools', [])
+        order_form = TransportOrderForm(request.POST)
+        tool_forms = [TransportToolsForm(request.POST, prefix=str(x)) for x in range(3)]  # Adjust the range as needed
 
-            # Retrieve source and destination shed objects
-            # source_shed = get_object_or_404(ShedDetails, pk=source_shed_id)
-            # destination_shed = get_object_or_404(ShedDetails, pk=destination_shed_id)
+        if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
+            with transaction.atomic():  # Use transaction to ensure data consistency
+                transport_order = order_form.save()
+                for form in tool_forms:
+                    if form.cleaned_data.get('tool'):
+                        tool = form.cleaned_data['tool']
+                        transport_tool = TransportTools.objects.create(transport=transport_order, tool=tool)
+                        # Update ShedTools from source shed to destination shed
+                        source_shed = transport_order.source_shed
+                        destination_shed = transport_order.destination_shed
+                        ShedTools.objects.filter(shed=source_shed, using_tool=tool).update(shed=destination_shed)
+                return redirect('home')  # Replace 'success_url' with your desired success URL
 
-            # Create the transport order
-            transport_order = TransportOrder.objects.create(
-                movement_date=movement_date,
-                source_shed=source_shed_id,
-                destination_shed=destination_shed_id,
-                tool_count=tool_count,
-                acknowledgment=acknowledgment
-            )
+        return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
-            # Create tools associated with the transport order
-            for tool_data in tools_data:
-                tool_id = tool_data.get('tool')
-                tool = get_object_or_404(InstrumentModel, pk=tool_id)
-                TransportTools.objects.create(transport=transport_order, tool=tool)
+# class TransportOrderView(View):
+    
+#     def post(self, request):
+#         order_form = TransportOrderForm(request.POST)
+#         tool_forms = [TransportToolsForm(request.POST, prefix=str(x)) for x in range(3)]  # Adjust the range as needed
 
-            return JsonResponse({'success': True}, status=status.HTTP_201_CREATED)
-        else:
-            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
+#             with transaction.atomic():  # Use transaction to ensure data consistency
+#                 transport_order = order_form.save()
+#                 tool_data = []
+#                 for form in tool_forms:
+#                     if form.cleaned_data.get('tool'):
+#                         tool = form.cleaned_data['tool']
+#                         transport_tool = TransportTools.objects.create(transport=transport_order, tool=tool)
+#                         # Update ShedTools from source shed to destination shed
+#                         source_shed = transport_order.source_shed
+#                         destination_shed = transport_order.destination_shed
+#                         ShedTools.objects.filter(shed=source_shed, using_tool=tool).update(shed=destination_shed)
+#                         tool_data.append({
+#                             'tool_id': tool.pk,
+#                             'tool_name': tool.instrument_name,
+#                             'transport_tool_id': transport_tool.pk,
+#                             'transport_order_id': transport_order.pk,
+#                             'source_shed': source_shed.name,
+#                             'destination_shed': destination_shed.name
+#                         })
+#                 return JsonResponse({'success': True, 'tool_data': tool_data})
+        
+#         errors = {
+#             'order_errors': order_form.errors,
+#             'tool_errors': [form.errors for form in tool_forms]
+#         }
+#         return JsonResponse({'success': False, 'errors': errors})
 
 # class ServiceOrderView(View):
 #     def get(self, request):
