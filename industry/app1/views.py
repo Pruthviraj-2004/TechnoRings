@@ -1,19 +1,22 @@
+from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.shortcuts import render,  redirect
 from django.views import View
-from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, ServiceOrderForm, ServiceToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm
-from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentFamilyGroupForm1, InstrumentForm, InstrumentGroupMasterForm, InstrumentGroupMasterForm1, InstrumentModelForm1, ServiceOrderForm, ServiceToolsForm, ShedDetailsForm, ShedToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
+from .models import TransportOrder, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import TransportOrder
+from rest_framework import generics
 from .serializers import CalibrationReportSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
-
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
 from .models import ServiceOrder, ServiceTools
-
+from django.core import serializers
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from datetime import timedelta
 
 class VendorView(APIView):
     def get(self, request):
@@ -153,6 +156,7 @@ def home(request):
 #             return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #Updates the tools in the shed
+# @method_decorator(csrf_exempt, name='dispatch')
 # class TransportOrderView(View):
 #     def get(self, request):
 #         order_form = TransportOrderForm()
@@ -178,6 +182,7 @@ def home(request):
 
 #         return render(request, 'app1/transport_order_form.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class TransportOrderView(View):
     def get(self, request):
         order_form = TransportOrderForm()
@@ -217,6 +222,7 @@ class TransportOrderView(View):
         return JsonResponse({'success': False, 'errors': errors})
 
 # just creates new service orders
+@method_decorator(csrf_exempt, name='dispatch')
 class ServiceOrderView(View):
     def get(self, request):
         order_form = AnotherServiceOrderForm()
@@ -243,6 +249,7 @@ class ServiceOrderView(View):
         # Handle invalid forms
         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
 
+# @method_decorator(csrf_exempt, name='dispatch')
 # class ServiceOrderView(APIView):
 #     def get(self, request):
 #         service_orders = ServiceOrder.objects.all()
@@ -335,61 +342,64 @@ class GenerateBillView(View):
         }
         return JsonResponse(data)
 
-class DeliveryChallanView(View):
-    def get(self, request):
-        # Retrieve shed, vendor, and service details
-        sheds = ShedDetails.objects.all()
-        vendors = Vendor.objects.all()
-        services = ServiceOrder.objects.all()
-        instruments = InstrumentModel.objects.all()
+# @method_decorator(csrf_exempt, name='dispatch')
+# class DeliveryChallanView(View):
+#     def get(self, request):
+#         # Retrieve shed, vendor, and service details
+#         sheds = ShedDetails.objects.all()
+#         vendors = Vendor.objects.all()
+#         services = ServiceOrder.objects.all()
+#         instruments = InstrumentModel.objects.all()
 
-        # Create form instances
-        delivery_challan_form = DeliveryChallanForm()
-        delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
-        calibration_report_form = CalibrationReportForm()
+#         # Create form instances
+#         delivery_challan_form = DeliveryChallanForm()
+#         delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
+#         calibration_report_form = CalibrationReportForm()
 
-        # Pass form instances and context variables to the template
-        return render(request, 'app1/delivery_challan.html', {
-            'delivery_challan_form': delivery_challan_form,
-            'delivery_challan_tools_formset': delivery_challan_tools_formset,
-            'calibration_report_form': calibration_report_form,
-            'sheds': sheds,
-            'vendors': vendors,
-            'services': services,
-            'instruments': instruments,
-        })
+#         # Pass form instances and context variables to the template
+#         return render(request, 'app1/delivery_challan.html', {
+#             'delivery_challan_form': delivery_challan_form,
+#             'delivery_challan_tools_formset': delivery_challan_tools_formset,
+#             'calibration_report_form': calibration_report_form,
+#             'sheds': sheds,
+#             'vendors': vendors,
+#             'services': services,
+#             'instruments': instruments,
+#         })
 
-    def post(self, request):
-        delivery_challan_form = DeliveryChallanForm(request.POST)
-        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
-        calibration_report_form = CalibrationReportForm(request.POST)
+#     def post(self, request):
+#         delivery_challan_form = DeliveryChallanForm(request.POST)
+#         DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
+#         delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
+#         calibration_report_form = CalibrationReportForm(request.POST)
 
-        if calibration_report_form.is_valid():
-            # Store calibration report details
-            calibration_report = calibration_report_form.save(commit=False)
+#         if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+#             # Store calibration report details
+#             calibration_report = calibration_report_form.save(commit=False)
+
+#             # Get the selected tool from the form data
+#             selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
             
-            # Set the calibration_tool_id programmatically
-            calibration_report.calibration_tool_id = 1  # Replace <some_tool_id> with the actual ID
+#             # Set the calibration tool of the calibration report
+#             calibration_report.calibration_tool = selected_tool
             
-            calibration_report.save()
+#             calibration_report.save()
             
-            if delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
-                # Store delivery challan details
-                delivery_challan = delivery_challan_form.save()
-                
-                for form in delivery_challan_tools_formset:
-                    if form.is_valid():
-                        tool_instance = form.save(commit=False)
-                        tool_instance.deliverychallan = delivery_challan
-                        tool_instance.save()
-                        # Associate the calibration report with the delivery challan tool
-                        tool_instance.calibration_report = calibration_report
-                        tool_instance.save() 
+#             # Store delivery challan details
+#             delivery_challan = delivery_challan_form.save()
+
+#             for form in delivery_challan_tools_formset:
+#                 if form.is_valid():
+#                     tool_instance = form.save(commit=False)
+#                     tool_instance.deliverychallan = delivery_challan
+#                     tool_instance.calibration_report = calibration_report
+#                     tool_instance.save() 
                         
-                return redirect('home')
+#             return redirect('home')
 
-        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
-
+#         return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
+    
+# @method_decorator(csrf_exempt, name='dispatch')
 # class DeliveryChallanView(View):
 #     def post(self, request):
 #         # Extract data from the request
@@ -438,14 +448,24 @@ class DeliveryChallanView(View):
     
 #         return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})
 
-class InstrumentTransportHistoryView(View):
+class InstrumentTransportHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
         transport_history = TransportTools.objects.filter(tool=instrument)
-        serialized_data = serializers.serialize('json', transport_history)
-        return JsonResponse({'instrument': instrument, 'transport_history': serialized_data}, safe=False)
-
-from django.core import serializers
+        serialized_transport_history = TransportToolsSerializer(transport_history, many=True).data
+        
+        # Extracting movement_ids from serialized transport history
+        movement_ids = [item['transport'] for item in serialized_transport_history]
+        
+        # Filtering TransportOrder instances based on extracted movement_ids
+        transport_orders = TransportOrder.objects.filter(movement_id__in=movement_ids)
+        serialized_transport_orders = TransportOrderSerializer(transport_orders, many=True).data
+        
+        return Response({
+            'instrument': InstrumentModelSerializer(instrument).data,
+            'transport_history': serialized_transport_history,
+            'transport_orders': serialized_transport_orders
+        })
 
 # class InstrumentServiceHistoryView(View):
 #     def get(self, request, instrument_id):
@@ -454,13 +474,25 @@ from django.core import serializers
     
 #         return render(request, 'app1/instrument_service_history.html', {'instrument': instrument, 'service_history': service_history})
 
-class InstrumentServiceHistoryView(View):
+class InstrumentServiceHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
-        service_history = ServiceTools.objects.filter(tool=instrument)
-        serialized_data = serializers.serialize('json', service_history)
-        return JsonResponse({'instrument': instrument, 'service_history': serialized_data}, safe=False)
-
+        service_history = ServiceTools.objects.filter(tool=instrument).select_related('service')
+        
+        serialized_service_history = []
+        for service_tool in service_history:
+            service_order_data = {
+                'service_id': service_tool.service.service_id,
+                'date': service_tool.service.date,
+                'amount': service_tool.service.amount,
+                'description': service_tool.service.description,
+                'tool_count': service_tool.service.tool_count,
+                'vendor': service_tool.service.vendor.name  # Assuming you have a 'name' field in Vendor model
+            }
+            serialized_service_history.append(service_order_data)
+        
+        return Response({'instrument': InstrumentModelSerializer(instrument).data, 'service_history': serialized_service_history})
+    
 class ShedDetailView1(View):
     def get(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
@@ -495,3 +527,287 @@ class VendorDetailsView1(APIView):
 #         # Render the vendor details page with the retrieved data
 #         return render(request, 'app1/vendor_details.html', {'vendor': vendor, 'vendor_handles': vendor_handles})
                 
+
+# @method_decorator(csrf_exempt, name='dispatch')
+class DeliveryChallanView(View):
+    def get(self, request):
+        # Retrieve shed, vendor, and service details
+        sheds = ShedDetails.objects.all()
+        vendors = Vendor.objects.all()
+        services = ServiceOrder.objects.all()
+        instruments = InstrumentModel.objects.all()
+
+        # Create form instances
+        delivery_challan_form = DeliveryChallanForm()
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
+        calibration_report_form = CalibrationReportForm()
+
+        # Pass form instances and context variables to the template
+        return render(request, 'app1/delivery_challan.html', {
+            'delivery_challan_form': delivery_challan_form,
+            'delivery_challan_tools_formset': delivery_challan_tools_formset,
+            'calibration_report_form': calibration_report_form,
+            'sheds': sheds,
+            'vendors': vendors,
+            'services': services,
+            'instruments': instruments,
+        })
+
+    # def post(self, request):
+    #     delivery_challan_form = DeliveryChallanForm(request.POST)
+    #     DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
+    #     delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
+    #     calibration_report_form = CalibrationReportForm(request.POST)
+
+    #     if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+    # # Store calibration report details
+    #         calibration_report = calibration_report_form.save(commit=False)
+
+    #         # Get the selected tool from the form data
+    #         selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
+
+    #         # Get the VendorHandles object associated with the selected tool
+    #         vendor_handle = VendorHandles.objects.get(tool=selected_tool)
+
+    #         # Set the calibration tool of the calibration report
+    #         calibration_report.calibration_tool = selected_tool
+                    
+    #         # Calculate notification date
+    #         calibration_date = calibration_report.calibration_date
+    #         turnaround_time = vendor_handle.turnaround_time  # Access the turnaround_time from VendorHandles
+    #         notification_date = calibration_date - timedelta(days=turnaround_time) + timedelta(days=365)  # Add 1 year
+
+    #         # Set the notification date
+    #         calibration_report.notification_date = notification_date
+            
+    #         calibration_report.save()
+            
+    #         # Store delivery challan details
+    #         delivery_challan = delivery_challan_form.save()
+
+    #         for form in delivery_challan_tools_formset:
+    #             if form.is_valid():
+    #                 tool_instance = form.save(commit=False)
+    #                 tool_instance.deliverychallan = delivery_challan
+    #                 tool_instance.calibration_report = calibration_report
+    #                 tool_instance.save() 
+                            
+    #         return redirect('home')
+        
+    #     return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
+    def post(self, request):
+        delivery_challan_form = DeliveryChallanForm(request.POST)
+        DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
+        calibration_report_form = CalibrationReportForm(request.POST)
+
+        if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+            # Store calibration report details
+            calibration_report = calibration_report_form.save(commit=False)
+
+            # Get the selected tool from the form data
+            selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
+
+            # Get the calibration frequency of the selected tool
+            calibration_frequency = selected_tool.calibration_frequency
+
+            # Set the calibration tool of the calibration report
+            calibration_report.calibration_tool = selected_tool
+                    
+            # Calculate next calibration date
+            calibration_date = calibration_report.calibration_date
+            next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)  # Assuming calibration frequency is in years
+
+            # Set the next calibration date
+            calibration_report.next_calibration_date = next_calibration_date
+            
+            vendor_handle = VendorHandles.objects.get(tool=selected_tool)
+            # Calculate notification date
+            turnaround_time = vendor_handle.turnaround_time  # Access the turnaround_time from VendorHandles
+            notification_date = next_calibration_date - timedelta(days=turnaround_time)
+            calibration_report.notification_date = notification_date
+            
+            calibration_report.save()
+            
+            # Store delivery challan details
+            delivery_challan = delivery_challan_form.save()
+
+            for form in delivery_challan_tools_formset:
+                if form.is_valid():
+                    tool_instance = form.save(commit=False)
+                    tool_instance.deliverychallan = delivery_challan
+                    tool_instance.calibration_report = calibration_report
+                    tool_instance.save() 
+                            
+            return redirect('home')
+        
+        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
+    
+# class AddInstrumentView(View):
+#     def get(self, request):
+#         instrument_family_group_form = InstrumentFamilyGroupForm()
+#         instrument_group_master_form = InstrumentGroupMasterForm()
+#         instrument_form = InstrumentForm()
+#         return render(request, 'app1/instrument_form.html', {'instrument_form': instrument_form, 'instrument_group_master_form': instrument_group_master_form, 'instrument_family_group_form': instrument_family_group_form})
+
+#     def post(self, request):
+#         instrument_form = InstrumentForm(request.POST)
+#         instrument_group_master_form = InstrumentGroupMasterForm(request.POST)
+#         instrument_family_group_form = InstrumentFamilyGroupForm(request.POST)
+#         if instrument_form.is_valid() and instrument_group_master_form.is_valid() and instrument_family_group_form.is_valid():
+#             instrument = instrument_form.save()
+#             instrument_group_master = instrument_group_master_form.save()
+#             instrument_family_group = instrument_family_group_form.save(commit=False)
+#             instrument_family_group.instrument_group_master = instrument_group_master
+#             instrument_family_group.save()
+#             return redirect('home')
+#         return render(request, 'app1/instrument_form.html', {'instrument_form': instrument_form, 'instrument_group_master_form': instrument_group_master_form, 'instrument_family_group_form': instrument_family_group_form})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddInstrumentView(View):
+    def get(self, request):
+        instrument_family_group_form = InstrumentFamilyGroupForm1()
+        instrument_group_master_form = InstrumentGroupMasterForm1()
+        instrument_model_form = InstrumentModelForm1()
+        return render(request, 'app1/instrument_form.html', {
+            'instrument_family_group_form': instrument_family_group_form,
+            'instrument_group_master_form': instrument_group_master_form,
+            'instrument_model_form': instrument_model_form
+        })
+
+    def post(self, request):
+        instrument_family_group_form = InstrumentFamilyGroupForm1(request.POST)
+        instrument_group_master_form = InstrumentGroupMasterForm1(request.POST)
+        instrument_model_form = InstrumentModelForm1(request.POST)
+        
+        if instrument_family_group_form.is_valid() and instrument_group_master_form.is_valid() and instrument_model_form.is_valid():
+            # Save Instrument Group Master
+            instrument_group_master = instrument_group_master_form.save()
+
+            # Save Instrument Family Group
+            instrument_family_group = instrument_family_group_form.save(commit=False)
+            instrument_family_group.instrument_group_master = instrument_group_master
+            instrument_family_group.save()
+
+            # Save Instrument Model
+            instrument_model = instrument_model_form.save(commit=False)
+            instrument_model.type_of_tool = instrument_group_master
+            instrument_model.save()
+
+            return redirect('home')
+
+        return render(request, 'app1/instrument_form.html', {
+            'instrument_family_group_form': instrument_family_group_form,
+            'instrument_group_master_form': instrument_group_master_form,
+            'instrument_model_form': instrument_model_form
+        })  
+    
+@method_decorator(csrf_exempt, name='dispatch')
+class AddInstrumentModelView1(View):
+    def get(self, request):
+        instrument_model_form = InstrumentForm()
+        return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
+
+    def post(self, request):
+        instrument_model_form = InstrumentForm(request.POST)
+        if instrument_model_form.is_valid():
+            instrument_model_form.save()
+            return redirect('home')
+        return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddInstrumentGroupMasterView(View):
+    def get(self, request):
+        instrument_group_master_form = InstrumentGroupMasterForm()
+        return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
+
+    def post(self, request):
+        instrument_group_master_form = InstrumentGroupMasterForm(request.POST)
+        if instrument_group_master_form.is_valid():
+            instrument_group_master_form.save()
+            return redirect('home')
+        return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddInstrumentFamilyView(View):
+    def get(self, request):
+        instrument_family_form = InstrumentFamilyGroupForm()
+        return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
+
+    def post(self, request):
+        instrument_family_form = InstrumentFamilyGroupForm(request.POST)
+        if instrument_family_form.is_valid():
+            instrument_family_form.save()
+            return redirect('home')
+        return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
+   
+@method_decorator(csrf_exempt, name='dispatch')
+class AddVendorView(View):
+    def get(self, request):
+        form = VendorForm()
+        return render(request, 'app1/vendor_form.html', {'form': form})
+
+    def post(self, request):
+        form = VendorForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})  # Return a JSON response indicating success
+        # If form is not valid, return a JSON response with errors
+        errors = form.errors.as_json()
+        return JsonResponse({'success': False, 'errors': errors})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddVendorHandlesView(View):
+    def get(self, request):
+        # If you need to retrieve existing data, implement the GET method accordingly
+        # For example:
+        # vendor_handles = VendorHandles.objects.all()  # Retrieve all existing vendor handles
+        # data = [{'id': vh.id, 'vendor': vh.vendor.name, 'tool': vh.tool.instrument_name, 'turnaround_time': vh.turnaround_time, 'cost': vh.cost} for vh in vendor_handles]
+        # return JsonResponse({'vendor_handles': data})
+
+        form = VendorHandlesForm()
+        return render(request, 'app1/vendor_handles_form.html', {'form': form})
+
+    def post(self, request):
+        form = VendorHandlesForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})  # Return a JSON response indicating success
+        # If form is not valid, return a JSON response with errors
+        errors = form.errors.as_json()
+        return JsonResponse({'success': False, 'errors': errors})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddShedDetailsView(View):
+    def get(self, request):
+        # If you need to retrieve existing data, implement the GET method accordingly
+        # For example:
+        # shed_details = ShedDetails.objects.all()  # Retrieve all existing shed details
+        # data = [{'id': sd.id, 'name': sd.name, 'location': sd.location, 'phone_number': sd.phone_number} for sd in shed_details]
+        # return JsonResponse({'shed_details': data})
+
+        form = ShedDetailsForm()
+        return render(request, 'app1/shed_details_form.html', {'form': form})
+
+    def post(self, request):
+        form = ShedDetailsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})  # Return a JSON response indicating success
+        # If form is not valid, return a JSON response with errors
+        errors = form.errors.as_json()
+        return JsonResponse({'success': False, 'errors': errors})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddShedToolsView(View):
+    def get(self, request):
+        form = ShedToolsForm()
+        return render(request, 'app1/shed_tools_form.html', {'form': form})
+
+    def post(self, request):
+        form = ShedToolsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('home')  # Redirect to home page after successful form submission
+        return render(request, 'app1/shed_tools_form.html', {'form': form})
+                           

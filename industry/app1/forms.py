@@ -1,5 +1,20 @@
 from django import forms
-from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel, ServiceOrder, ServiceTools, TransportOrder, ShedDetails, TransportTools
+from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+
+class InstrumentForm(forms.ModelForm):
+    class Meta:
+        model = InstrumentModel
+        fields = ['instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'type_of_tool', 'calibration_frequency']
+
+class InstrumentGroupMasterForm(forms.ModelForm):
+    class Meta:
+        model = InstrumentGroupMaster
+        fields = ['tool_group_name', 'tool_group_code', 'instrument_type']
+
+class InstrumentFamilyGroupForm(forms.ModelForm):
+    class Meta:
+        model = InstrumentFamilyGroup
+        fields = ['instrument_family_name', 'instrument_group_master']
 
 class TransportMovementOrderForm(forms.ModelForm):
     class Meta:
@@ -64,6 +79,46 @@ class DeliveryChallanToolsForm(forms.ModelForm):
 class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
-        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark']
+        # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date','remark']
+        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark']
 
 DeliveryChallanToolsFormSet = forms.inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
+
+class InstrumentFamilyGroupForm1(forms.ModelForm):
+    class Meta:
+        model = InstrumentFamilyGroup
+        fields = ['instrument_family_name']
+
+class InstrumentGroupMasterForm1(forms.ModelForm):
+    instrument_group_name = forms.CharField(max_length=24)
+    instrument_group_code = forms.CharField(max_length=8)
+
+    class Meta:
+        model = InstrumentGroupMaster
+        fields = []
+
+class InstrumentModelForm1(forms.ModelForm):
+    class Meta:
+        model = InstrumentModel
+        exclude = ['type_of_tool']
+
+class ShedDetailsForm(forms.ModelForm):
+    class Meta:
+        model = ShedDetails
+        fields = '__all__'
+
+class ShedToolsForm(forms.ModelForm):
+    class Meta:
+        model = ShedTools
+        fields = '__all__'
+        
+class VendorForm(forms.ModelForm):
+    class Meta:
+        model = Vendor
+        fields = '__all__'
+
+
+class VendorHandlesForm(forms.ModelForm):
+    class Meta:
+        model = VendorHandles
+        fields = '__all__'

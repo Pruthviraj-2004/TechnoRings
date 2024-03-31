@@ -133,10 +133,11 @@ class CalibrationReport(models.Model):
     result = models.FloatField()
     action = models.CharField(max_length=16)
     next_calibration_date = models.DateField()
+    notification_date = models.DateField()
     remark = models.TextField()
 
     def __str__(self):
-        return f"Calibration Tool: {self.calibration_tool} - Calibration Report No: {self.calibration_report_no}"  
+        return f"Calibration Tool: {self.calibration_tool} - Notification Date: {self.notification_date}"  
 
 class DeliveryChallanTools(models.Model):
     deliverychallantool_id = models.AutoField(primary_key=True)

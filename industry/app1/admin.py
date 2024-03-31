@@ -99,6 +99,6 @@ class DeliveryChallanToolsAdmin(admin.ModelAdmin):
 
 @admin.register(CalibrationReport)
 class CalibrationAdmin(admin.ModelAdmin):
-    list_display = ('calibrationtool_id', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_tool')
-    list_filter = ('calibration_date', 'calibration_agency', 'action')
+    list_display = ('calibrationtool_id', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date','notification_date', 'remark', 'calibration_tool')
+    list_filter = ('calibration_date', 'calibration_agency', 'action', 'notification_date')
     search_fields = ('calibration_report_no', 'calibration_agency')

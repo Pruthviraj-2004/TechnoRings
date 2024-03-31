@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import GenerateBillView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderView, VendorDetailsView1, VendorView
+from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, GenerateBillView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderView, VendorDetailsView1, VendorView
 from . import views
 
 urlpatterns = [
@@ -20,9 +20,17 @@ urlpatterns = [
     path('shed_detail/<int:shed_id>/', ShedDetailAPIView.as_view(), name='api_shed_detail'),
     path('vendor_details/<int:vendor_id>/', VendorDetailsView1.as_view(), name='vendor_details'),
 
-
     path('instrument-transport-history/<int:instrument_id>/', InstrumentTransportHistoryView.as_view(), name='instrument_transport_history'),
     path('instrument-service-history/<int:instrument_id>/', InstrumentServiceHistoryView.as_view(), name='instrument_service_history'),
+
+    path('add_instrument/', AddInstrumentView.as_view(), name='add_instrument'),
+    path('add_instrument1/', AddInstrumentModelView1.as_view(), name='add_instrument1'),
+    path('add_instrument_group_master/', AddInstrumentGroupMasterView.as_view(), name='add_instrument_group_master'),
+    path('add_instrument_family/', AddInstrumentFamilyView.as_view(), name='add_instrument_family'),
+    path('add_shed/', AddShedDetailsView.as_view(), name='add_shed_details'),
+    path('add_shed_tools/', AddShedToolsView.as_view(), name='add_shed_tools'),
+    path('add_vendor/', AddVendorView.as_view(), name='add_vendor'),
+    path('add_vendor_handles/', AddVendorHandlesView.as_view(), name='add_vendor_handles'),
 
 
 ]
