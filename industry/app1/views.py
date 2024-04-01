@@ -600,32 +600,103 @@ class AddInstrumentView(View):
             'instrument_group_master_form': instrument_group_master_form,
             'instrument_model_form': instrument_model_form
         })  
-
+    
+    
 @method_decorator(csrf_exempt, name='dispatch')
 class AddInstrumentModelView1(View):
     def get(self, request):
         instrument_model_form = InstrumentForm()
         return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
 
+    # def post(self, request):
+    #     instrument_model_form = InstrumentForm(request.POST)
+    #     if instrument_model_form.is_valid():
+    #         instrument_model_form.save()
+    #         return redirect('home')
+    #     return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
+    
     def post(self, request):
-        instrument_model_form = InstrumentForm(request.POST)
-        if instrument_model_form.is_valid():
-            instrument_model_form.save()
-            return redirect('home')
-        return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
+        # Parse JSON data from the request body
+        body_data = json.loads(request.body)
 
+        # Extract instrument model details from the parsed data
+        instrument_name = body_data.get('instrument_name')
+        manufacturer_name = body_data.get('manufacturer_name')
+        year_of_purchase = body_data.get('year_of_purchase')
+        gst = body_data.get('gst')
+        description = body_data.get('description')
+        instrument_range = body_data.get('instrument_range')
+        least_count = body_data.get('least_count')
+        type_of_tool_id = body_data.get('type_of_tool_id')
+        calibration_frequency = body_data.get('calibration_frequency')
+
+        # Create a dictionary with the extracted data
+        instrument_data = {
+            'instrument_name': instrument_name,
+            'manufacturer_name': manufacturer_name,
+            'year_of_purchase': year_of_purchase,
+            'gst': gst,
+            'description': description,
+            'instrument_range': instrument_range,
+            'least_count': least_count,
+            'type_of_tool': type_of_tool_id,
+            'calibration_frequency': calibration_frequency
+        }
+
+        # Create an InstrumentForm instance with the extracted data
+        form = InstrumentForm(instrument_data)
+
+        # Check if the form is valid
+        if form.is_valid():
+            # Save the form data
+            form.save()
+            return JsonResponse({'success': True})  # Return a JSON response indicating success
+        else:
+            # If form is not valid, return a JSON response with errors
+            errors = form.errors.as_json()
+            return JsonResponse({'success': False, 'errors': errors})
+        
 @method_decorator(csrf_exempt, name='dispatch')
 class AddInstrumentGroupMasterView(View):
     def get(self, request):
         instrument_group_master_form = InstrumentGroupMasterForm()
         return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
 
+    # def post(self, request):
+    #     instrument_group_master_form = InstrumentGroupMasterForm(request.POST)
+    #     if instrument_group_master_form.is_valid():
+    #         instrument_group_master_form.save()
+    #         return redirect('home')
+    #     return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
+
     def post(self, request):
-        instrument_group_master_form = InstrumentGroupMasterForm(request.POST)
-        if instrument_group_master_form.is_valid():
-            instrument_group_master_form.save()
-            return redirect('home')
-        return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
+        # Parse JSON data from the request body
+        body_data = json.loads(request.body)
+
+        # Extract instrument group master details from the parsed data
+        # Adjust the keys according to your JSON structure
+        # For example, if your JSON has 'group_name' instead of 'name', use body_data.get('group_name')
+        name = body_data.get('name')
+        description = body_data.get('description')
+
+        # Create a dictionary with the extracted data
+        instrument_group_master_data = {
+            'name': name,
+            'description': description
+        }
+
+        # Create an InstrumentGroupMasterForm instance with the extracted data
+        form = InstrumentGroupMasterForm(instrument_group_master_data)
+
+        # Check if the form is valid
+        if form.is_valid():
+            # Save the form data
+            form.save()
+            return JsonResponse({'success': True})  # Return a JSON response indicating success
+        else:
+            # If form is not valid, return a JSON response with errors
+            errors = form.errors.as_json()
+            return JsonResponse({'success': False, 'errors': errors})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AddInstrumentFamilyView(View):
@@ -633,13 +704,41 @@ class AddInstrumentFamilyView(View):
         instrument_family_form = InstrumentFamilyGroupForm()
         return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
 
+    # def post(self, request):
+    #     instrument_family_form = InstrumentFamilyGroupForm(request.POST)
+    #     if instrument_family_form.is_valid():
+    #         instrument_family_form.save()
+    #         return redirect('home')
+    #     return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
+    
     def post(self, request):
-        instrument_family_form = InstrumentFamilyGroupForm(request.POST)
-        if instrument_family_form.is_valid():
-            instrument_family_form.save()
-            return redirect('home')
-        return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
-   
+        # Parse JSON data from the request body
+        body_data = json.loads(request.body)
+
+        # Extract instrument family details from the parsed data
+        # Adjust the keys according to your JSON structure
+        # For example, if your JSON has 'family_name' instead of 'name', use body_data.get('family_name')
+        name = body_data.get('name')
+
+        # Create a dictionary with the extracted data
+        instrument_family_data = {
+            'instrument_family_name': name,
+            'instrument_group_master': body_data.get('instrument_group_master') 
+        }
+
+        # Create an InstrumentFamilyGroupForm instance with the extracted data
+        form = InstrumentFamilyGroupForm(instrument_family_data)
+
+        # Check if the form is valid
+        if form.is_valid():
+            # Save the form data
+            form.save()
+            return JsonResponse({'success': True})  # Return a JSON response indicating success
+        else:
+            # If form is not valid, return a JSON response with errors
+            errors = form.errors.as_json()
+            return JsonResponse({'success': False, 'errors': errors})
+        
 @method_decorator(csrf_exempt, name='dispatch')
 class AddVendorView(View):
     def get(self, request):
