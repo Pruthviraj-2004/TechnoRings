@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, GenerateBillView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderView, VendorDetailsView1, VendorView
+from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderView, VendorDetailsView1, VendorView
 from . import views
 
 urlpatterns = [
@@ -13,6 +13,10 @@ urlpatterns = [
     path('delivery_challan/', views.DeliveryChallanView.as_view(), name='delivery_challan'),
 
     path('instrument-tools/', InstrumentToolsView.as_view(), name='instrument_tools'),
+    path('instrument-family-group-tools/', InstrumentFamilyGroupView.as_view(), name='instrument_family_group_tools'),
+    path('instrument-group-master-tools/', InstrumentGroupMasterView.as_view(), name='instrument_group_master_tools'),
+
+
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
     path('vendor/', VendorView.as_view(), name='vendor'),

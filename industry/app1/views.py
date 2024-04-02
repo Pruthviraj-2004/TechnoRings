@@ -4,12 +4,12 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentFamilyGroupForm1, InstrumentForm, InstrumentGroupMasterForm, InstrumentGroupMasterForm1, InstrumentModelForm1, ServiceOrderForm, ServiceToolsForm, ShedDetailsForm, ShedToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
-from .models import TransportOrder, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+from .models import InstrumentFamilyGroup, InstrumentGroupMaster, TransportOrder, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
-from .serializers import CalibrationReportSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
+from .serializers import CalibrationReportSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm
@@ -36,6 +36,28 @@ class InstrumentToolsView(APIView):
     def get(self, request):
         instruments = InstrumentModel.objects.all()
         instrument_serializer = InstrumentModelSerializer(instruments, many=True)
+
+        response_data = {
+            'instrument_models': instrument_serializer.data,
+        }
+
+        return Response(response_data)
+    
+class InstrumentFamilyGroupView(APIView):
+    def get(self, request):
+        instruments = InstrumentFamilyGroup.objects.all()
+        instrument_serializer = InstrumentFamilyGroupSerializer(instruments, many=True)
+
+        response_data = {
+            'instrument_models': instrument_serializer.data,
+        }
+
+        return Response(response_data)
+    
+class InstrumentGroupMasterView(APIView):
+    def get(self, request):
+        instruments = InstrumentGroupMaster.objects.all()
+        instrument_serializer = InstrumentGroupMasterSerializer(instruments, many=True)
 
         response_data = {
             'instrument_models': instrument_serializer.data,
