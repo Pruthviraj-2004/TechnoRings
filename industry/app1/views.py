@@ -1088,4 +1088,76 @@ class DeleteCalibrationReportView(View):
                 transaction.rollback()
                 # You can log the error or display an error message to the user
                 return HttpResponseServerError("An error occurred while deleting the calibration report.")
-                        
+
+class DeleteShedToolsView(View):
+    def get(self, request, shedtool_id):
+        shed_tool = get_object_or_404(ShedTools, pk=shedtool_id)
+        return render(request, 'app1/delete_shed_tool.html', {'shed_tool': shed_tool})
+
+    def post(self, request, shedtool_id):
+        shed_tool = get_object_or_404(ShedTools, pk=shedtool_id)
+        shed_tool.delete()
+        return redirect('home')
+
+class DeleteTransportToolsView(View):
+    def get(self, request, transporttool_id):
+        transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
+        return render(request, 'app1/delete_transport_tool.html', {'transport_tool': transport_tool})
+
+    def post(self, request, transporttool_id):
+        transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
+        transport_tool.delete()
+        return redirect('home')
+
+class DeleteServiceToolsView(View):
+    def get(self, request, servicetool_id):
+        service_tool = get_object_or_404(ServiceTools, pk=servicetool_id)
+        return render(request, 'app1/delete_service_tool.html', {'service_tool': service_tool})
+
+    def post(self, request, servicetool_id):
+        service_tool = get_object_or_404(ServiceTools, pk=servicetool_id)
+        service_tool.delete()
+        return redirect('home') 
+
+
+class DeleteDeliveryChallanToolsView(View):
+    def get(self, request, deliverychallantool_id):
+        delivery_challan_tool = get_object_or_404(DeliveryChallanTools, pk=deliverychallantool_id)
+        return render(request, 'app1/delete_delivery_challan_tool.html', {'delivery_challan_tool': delivery_challan_tool})
+
+    def post(self, request, deliverychallantool_id):
+        delivery_challan_tool = get_object_or_404(DeliveryChallanTools, pk=deliverychallantool_id)
+        delivery_challan_tool.delete()
+        return redirect('home') 
+
+class DeleteVendorHandlesView(View):
+    def get(self, request, vendorhandle_id):
+        vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
+        return render(request, 'app1/delete_vendor_handles.html', {'vendor_handle': vendor_handle})
+
+    def post(self, request, vendorhandle_id):
+        vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
+        vendor_handle.delete()
+        return redirect('home')
+
+class DeleteInstrumentGroupMasterView(View):
+    def get(self, request, tool_id):
+        instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
+        return render(request, 'app1/delete_instrument_group.html', {'instrument_group': instrument_group})
+
+    def post(self, request, tool_id):
+        instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
+        instrument_group.delete()
+        return redirect('home')
+
+class DeleteInstrumentFamilyGroupView(View):
+    def get(self, request, instrumentfamilyid):
+        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
+        return render(request, 'app1/delete_instrument_family_group.html', {'instrument_family': instrument_family})
+
+    def post(self, request, instrumentfamilyid):
+        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
+        instrument_family.delete()
+        return redirect('home')
+    
+                                                 

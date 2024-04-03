@@ -4,7 +4,7 @@ from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, In
 
 @admin.register(InstrumentGroupMaster)
 class InstrumentGroupMasterAdmin(admin.ModelAdmin):
-    list_display = ('tool_group_name', 'tool_group_code', 'instrument_type')
+    list_display = ('tool_id', 'tool_group_name', 'tool_group_code', 'instrument_type')
 
 @admin.register(InstrumentFamilyGroup)
 class InstrumentFamilyGroupAdmin(admin.ModelAdmin):
@@ -37,12 +37,6 @@ class ShedToolsAdmin(admin.ModelAdmin):
     list_display = ('shedtool_id', 'shed', 'using_tool')
     list_filter = ('shed', 'using_tool')
     search_fields = ('shed__name', 'using_tool__instrument_name')
-
-# @admin.register(ToolMovement)
-# class ToolMovementAdmin(admin.ModelAdmin):
-#     list_display = ('movement_id', 'movement_date', 'tool', 'source_shed', 'destination_shed', 'acknowledgment', 'tool_count', 'instrument_name')
-#     list_filter = ('movement_date', 'source_shed', 'destination_shed', 'acknowledgment')
-#     search_fields = ('movement_id', 'tool__tool_group_name', 'source_shed__name', 'destination_shed__name', 'instrument_name__instrument_name')
 
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(admin.ModelAdmin):
