@@ -23,82 +23,48 @@ from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 
+
 class VendorView(APIView):
     def get(self, request):
-        vendor = Vendor.objects.all()
-        vendor_serializer = VendorSerializer(vendor, many=True)
+        vendors = Vendor.objects.all()
+        serializer = VendorSerializer(vendors, many=True)
+        return Response({'vendors': serializer.data})
 
-        response_data = {
-            'vendor' : vendor_serializer.data,
-        }
-
-        return Response(response_data)
-    
 class InstrumentToolsView(APIView):
     def get(self, request):
         instruments = InstrumentModel.objects.all()
-        instrument_serializer = InstrumentModelSerializer(instruments, many=True)
+        serializer = InstrumentModelSerializer(instruments, many=True)
+        return Response({'instrument_models': serializer.data})
 
-        response_data = {
-            'instrument_models': instrument_serializer.data,
-        }
-
-        return Response(response_data)
-    
 class InstrumentFamilyGroupView(APIView):
     def get(self, request):
         instruments = InstrumentFamilyGroup.objects.all()
-        instrument_serializer = InstrumentFamilyGroupSerializer(instruments, many=True)
+        serializer = InstrumentFamilyGroupSerializer(instruments, many=True)
+        return Response({'instrument_family_groups': serializer.data})
 
-        response_data = {
-            'instrument_models': instrument_serializer.data,
-        }
-
-        return Response(response_data)
-    
 class InstrumentGroupMasterView(APIView):
     def get(self, request):
         instruments = InstrumentGroupMaster.objects.all()
-        instrument_serializer = InstrumentGroupMasterSerializer(instruments, many=True)
+        serializer = InstrumentGroupMasterSerializer(instruments, many=True)
+        return Response({'instrument_group_masters': serializer.data})
 
-        response_data = {
-            'instrument_models': instrument_serializer.data,
-        }
-
-        return Response(response_data)
-    
 class ShedDetailsView(APIView):
     def get(self, request):
         shed_details = ShedDetails.objects.all()
-        shed_serializer = ShedDetailsSerializer(shed_details, many=True)
-
-        response_data = {
-            'shed_details' : shed_serializer.data,
-        }
-
-        return Response(response_data)
+        serializer = ShedDetailsSerializer(shed_details, many=True)
+        return Response({'shed_details': serializer.data})
 
 class ShedToolsView(APIView):
     def get(self, request):
-        shed_tools_details = ShedTools.objects.all()
-        shed_tools_serializer = ShedToolsSerializer(shed_tools_details, many=True)
+        shed_tools = ShedTools.objects.all()
+        serializer = ShedToolsSerializer(shed_tools, many=True)
+        return Response({'shed_tools': serializer.data})
 
-        response_data = {
-            'shed_tools_details' : shed_tools_serializer.data,
-        }
-
-        return Response(response_data)
-    
 class CalibrationReportView(APIView):
     def get(self, request):
-        calibration_report = CalibrationReport.objects.all()
-        calibration_report_serializer = CalibrationReportSerializer(calibration_report, many=True)
-
-        response_data = {
-            'calibration_report' : calibration_report_serializer.data,
-        }
-
-        return Response(response_data)
+        calibration_reports = CalibrationReport.objects.all()
+        serializer = CalibrationReportSerializer(calibration_reports, many=True)
+        return Response({'calibration_reports': serializer.data})
 
 def home(request):
     return render(request, 'app1/home.html')
@@ -914,6 +880,7 @@ class AddShedToolsView(View):
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
 
+
 class VendorDeleteView(View):
     def get(self, request, vendor_id):
         vendor = Vendor.objects.get(pk=vendor_id)
@@ -921,8 +888,11 @@ class VendorDeleteView(View):
 
     def post(self, request, vendor_id):
         vendor = get_object_or_404(Vendor, pk=vendor_id)
-        vendor.delete()
-        return redirect('home')
+        try:
+            vendor.delete()
+            return JsonResponse({'success': True, 'message': 'Vendor deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class ShedDeleteView(View):
     def get(self, request, shed_id):
@@ -931,9 +901,12 @@ class ShedDeleteView(View):
 
     def post(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
-        shed.delete()
-        return redirect('home')
-            
+        try:
+            shed.delete()
+            return JsonResponse({'success': True, 'message': 'Shed deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
 class TransportOrderDeleteView(View):
     def get(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
@@ -941,8 +914,12 @@ class TransportOrderDeleteView(View):
 
     def post(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
-        transport_order.delete()
-        return('home')
+        try:
+            transport_order.delete()
+            return JsonResponse({'success': True, 'message': 'Transport order deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
 class ServiceOrderDeleteView(View):
     def get(self, request, service_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
@@ -950,8 +927,11 @@ class ServiceOrderDeleteView(View):
 
     def post(self, request, service_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
-        service_order.delete()
-        return redirect('home')
+        try:
+            service_order.delete()
+            return JsonResponse({'success': True, 'message': 'Service order deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteDeliveryChallanView(View):
     def get(self, request, delivery_challan_id):
@@ -960,8 +940,11 @@ class DeleteDeliveryChallanView(View):
 
     def post(self, request, delivery_challan_id):
         delivery_challan = get_object_or_404(DeliveryChallan, pk=delivery_challan_id)
-        delivery_challan.delete()
-        return redirect('home')
+        try:
+            delivery_challan.delete()
+            return JsonResponse({'success': True, 'message': 'Delivery challan deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteCalibrationReportView(View):
     def get(self, request, calibration_report_id):
@@ -970,8 +953,11 @@ class DeleteCalibrationReportView(View):
 
     def post(self, request, calibration_report_id):
         calibration_report = get_object_or_404(CalibrationReport, pk=calibration_report_id)
-        calibration_report.delete()
-        return redirect('home')
+        try:
+            calibration_report.delete()
+            return JsonResponse({'success': True, 'message': 'Calibration report deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteShedToolsView(View):
     def get(self, request, shedtool_id):
@@ -980,8 +966,11 @@ class DeleteShedToolsView(View):
 
     def post(self, request, shedtool_id):
         shed_tool = get_object_or_404(ShedTools, pk=shedtool_id)
-        shed_tool.delete()
-        return redirect('home')
+        try:
+            shed_tool.delete()
+            return JsonResponse({'success': True, 'message': 'Shed tool deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteTransportToolsView(View):
     def get(self, request, transporttool_id):
@@ -990,8 +979,11 @@ class DeleteTransportToolsView(View):
 
     def post(self, request, transporttool_id):
         transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
-        transport_tool.delete()
-        return redirect('home')
+        try:
+            transport_tool.delete()
+            return JsonResponse({'success': True, 'message': 'Transport tool deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteServiceToolsView(View):
     def get(self, request, servicetool_id):
@@ -1000,9 +992,11 @@ class DeleteServiceToolsView(View):
 
     def post(self, request, servicetool_id):
         service_tool = get_object_or_404(ServiceTools, pk=servicetool_id)
-        service_tool.delete()
-        return redirect('home') 
-
+        try:
+            service_tool.delete()
+            return JsonResponse({'success': True, 'message': 'Service tool deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteDeliveryChallanToolsView(View):
     def get(self, request, deliverychallantool_id):
@@ -1011,8 +1005,11 @@ class DeleteDeliveryChallanToolsView(View):
 
     def post(self, request, deliverychallantool_id):
         delivery_challan_tool = get_object_or_404(DeliveryChallanTools, pk=deliverychallantool_id)
-        delivery_challan_tool.delete()
-        return redirect('home') 
+        try:
+            delivery_challan_tool.delete()
+            return JsonResponse({'success': True, 'message': 'Delivery challan tool deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteVendorHandlesView(View):
     def get(self, request, vendorhandle_id):
@@ -1021,8 +1018,11 @@ class DeleteVendorHandlesView(View):
 
     def post(self, request, vendorhandle_id):
         vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
-        vendor_handle.delete()
-        return redirect('home')
+        try:
+            vendor_handle.delete()
+            return JsonResponse({'success': True, 'message': 'Vendor handle deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteInstrumentGroupMasterView(View):
     def get(self, request, tool_id):
@@ -1031,8 +1031,11 @@ class DeleteInstrumentGroupMasterView(View):
 
     def post(self, request, tool_id):
         instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
-        instrument_group.delete()
-        return redirect('home')
+        try:
+            instrument_group.delete()
+            return JsonResponse({'success': True, 'message': 'Instrument group deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
 class DeleteInstrumentFamilyGroupView(View):
     def get(self, request, instrumentfamilyid):
@@ -1041,6 +1044,21 @@ class DeleteInstrumentFamilyGroupView(View):
 
     def post(self, request, instrumentfamilyid):
         instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
-        instrument_family.delete()
-        return redirect('home')
+        try:
+            instrument_family.delete()
+            return JsonResponse({'success': True, 'message': 'Instrument family group deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
 
+class DeleteInstrumentModelView(View):
+    def get(self, request, instrument_no):
+        instrument_model = get_object_or_404(InstrumentModel, pk=instrument_no)
+        return render(request, 'app1/delete_instrument_model.html', {'instrument_model': instrument_model})
+
+    def post(self, request, instrument_no):
+        instrument_model = get_object_or_404(InstrumentModel, pk=instrument_no)
+        try:
+            instrument_model.delete()
+            return JsonResponse({'success': True, 'message': 'Instrument model deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})

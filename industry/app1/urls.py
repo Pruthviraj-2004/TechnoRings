@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, DeleteCalibrationReportView, DeleteDeliveryChallanToolsView, DeleteDeliveryChallanView, DeleteInstrumentFamilyGroupView, DeleteInstrumentGroupMasterView, DeleteServiceToolsView, DeleteShedToolsView, DeleteTransportToolsView, DeleteVendorHandlesView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView, ServiceOrderDeleteView,  ServiceOrderView, ShedDeleteView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderDeleteView, TransportOrderView, VendorDeleteView, VendorDetailsView1, VendorView
+from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, DeleteCalibrationReportView, DeleteDeliveryChallanToolsView, DeleteDeliveryChallanView, DeleteInstrumentFamilyGroupView, DeleteInstrumentGroupMasterView, DeleteInstrumentModelView, DeleteServiceToolsView, DeleteShedToolsView, DeleteTransportToolsView, DeleteVendorHandlesView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView, ServiceOrderDeleteView,  ServiceOrderView, ShedDeleteView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderDeleteView, TransportOrderView, VendorDeleteView, VendorDetailsView1, VendorView
 from . import views
 
 urlpatterns = [
@@ -47,6 +47,7 @@ urlpatterns = [
     path('vendor_handles/<int:vendorhandle_id>/delete/', DeleteVendorHandlesView.as_view(), name='delete_vendor_handles'),
     path('instrument_group/<int:tool_id>/delete/', DeleteInstrumentGroupMasterView.as_view(), name='delete_instrument_group'),
     path('instrument_family/<int:instrumentfamilyid>/delete/', DeleteInstrumentFamilyGroupView.as_view(), name='delete_instrument_family_group'),
+    path('instrument/<int:instrument_no>/delete/', DeleteInstrumentModelView.as_view(), name='delete_instrument_model'),
 
 
 
