@@ -921,37 +921,8 @@ class VendorDeleteView(View):
 
     def post(self, request, vendor_id):
         vendor = get_object_or_404(Vendor, pk=vendor_id)
-        
-        # Use atomic transaction to ensure all operations are rolled back if an error occurs
-        with transaction.atomic():
-            try:
-                # Delete related service orders
-                service_orders = ServiceOrder.objects.filter(vendor=vendor)
-                for service_order in service_orders:
-                    # Delete related service tools
-                    ServiceTools.objects.filter(service=service_order).delete()
-                    service_order.delete()
-                
-                # Delete related delivery challans
-                delivery_challans = DeliveryChallan.objects.filter(vendor=vendor)
-                for delivery_challan in delivery_challans:
-                    # Delete related delivery challan tools
-                    DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan).delete()
-                    delivery_challan.delete()
-
-                # Delete related vendor handles
-                VendorHandles.objects.filter(vendor=vendor).delete()
-
-                # Finally, delete the vendor
-                vendor.delete()
-                
-                # If everything is successful, redirect to home page
-                return redirect('home')
-            except Exception as e:
-                # If any error occurs, rollback the transaction and handle the error
-                transaction.rollback()
-                # You can log the error or display an error message to the user
-                return HttpResponseServerError("An error occurred while deleting the vendor.")
+        vendor.delete()
+        return redirect('home')
 
 class ShedDeleteView(View):
     def get(self, request, shed_id):
@@ -960,37 +931,8 @@ class ShedDeleteView(View):
 
     def post(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
-
-        # Use atomic transaction to ensure all operations are rolled back if an error occurs
-        with transaction.atomic():
-            try:
-                # Delete related transport orders where the shed is either source or destination
-                transport_orders = TransportOrder.objects.filter(Q(source_shed=shed) | Q(destination_shed=shed))
-                for transport_order in transport_orders:
-                    # Delete related transport tools
-                    TransportTools.objects.filter(transport=transport_order).delete()
-                transport_orders.delete()
-
-                # Delete related delivery challans where the shed is involved
-                delivery_challans = DeliveryChallan.objects.filter(shed=shed)
-                for delivery_challan in delivery_challans:
-                    # Delete related delivery challan tools
-                    DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan).delete()
-                delivery_challans.delete()
-
-                # Delete related shed tools
-                ShedTools.objects.filter(shed=shed).delete()
-
-                # Finally, delete the shed
-                shed.delete()
-
-                # If everything is successful, redirect to home page or any other appropriate page
-                return redirect('home')
-            except Exception as e:
-                # If any error occurs, rollback the transaction and handle the error
-                transaction.rollback()
-                # You can log the error or display an error message to the user
-                return HttpResponseServerError("An error occurred while deleting the shed.")
+        shed.delete()
+        return redirect('home')
             
 class TransportOrderDeleteView(View):
     def get(self, request, movement_id):
@@ -999,50 +941,17 @@ class TransportOrderDeleteView(View):
 
     def post(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
-        
-        # Use atomic transaction to ensure all operations are rolled back if an error occurs
-        with transaction.atomic():
-            try:
-                # Delete related transport tools
-                TransportTools.objects.filter(transport=transport_order).delete()
-                
-                # Finally, delete the transport order
-                transport_order.delete()
-                
-                # If everything is successful, redirect to home page or any other appropriate page
-                return redirect('home')
-            except Exception as e:
-                # If any error occurs, rollback the transaction and handle the error
-                transaction.rollback()
-                # You can log the error or display an error message to the user
-                return HttpResponseServerError("An error occurred while deleting the transport order.")
-
+        transport_order.delete()
+        return('home')
 class ServiceOrderDeleteView(View):
     def get(self, request, service_id):
-        # Retrieve the service order object or return 404 if not found
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
         return render(request, 'app1/delete_service_order.html', {'service_order': service_order})
 
     def post(self, request, service_id):
-        # Retrieve the service order object or return 404 if not found
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
-        
-        # Use atomic transaction to ensure all operations are rolled back if an error occurs
-        with transaction.atomic():
-            try:
-                # Delete related service tools
-                ServiceTools.objects.filter(service=service_order).delete()
-                
-                # Finally, delete the service order
-                service_order.delete()
-                
-                # If everything is successful, redirect to home page or any other appropriate page
-                return redirect('home')
-            except Exception as e:
-                # If any error occurs, rollback the transaction and handle the error
-                transaction.rollback()
-                # You can log the error or display an error message to the user
-                return HttpResponseServerError("An error occurred while deleting the service order.")
+        service_order.delete()
+        return redirect('home')
 
 class DeleteDeliveryChallanView(View):
     def get(self, request, delivery_challan_id):
@@ -1051,22 +960,8 @@ class DeleteDeliveryChallanView(View):
 
     def post(self, request, delivery_challan_id):
         delivery_challan = get_object_or_404(DeliveryChallan, pk=delivery_challan_id)
-
-        with transaction.atomic():
-            try:
-                # Delete related DeliveryChallanTools
-                delivery_challan.deliverychallantools_set.all().delete()
-
-                # Finally, delete the DeliveryChallan
-                delivery_challan.delete()
-
-                # If everything is successful, redirect to the home page or any other appropriate page
-                return redirect('home')
-            except Exception as e:
-                # If any error occurs, rollback the transaction and handle the error
-                transaction.rollback()
-                # You can log the error or display an error message to the user
-                return HttpResponseServerError("An error occurred while deleting the delivery challan.")
+        delivery_challan.delete()
+        return redirect('home')
 
 class DeleteCalibrationReportView(View):
     def get(self, request, calibration_report_id):
@@ -1075,19 +970,8 @@ class DeleteCalibrationReportView(View):
 
     def post(self, request, calibration_report_id):
         calibration_report = get_object_or_404(CalibrationReport, pk=calibration_report_id)
-
-        with transaction.atomic():
-            try:
-                # Delete the calibration report
-                calibration_report.delete()
-
-                # If everything is successful, redirect to the home page or any other appropriate page
-                return redirect('home')
-            except Exception as e:
-                # If any error occurs, rollback the transaction and handle the error
-                transaction.rollback()
-                # You can log the error or display an error message to the user
-                return HttpResponseServerError("An error occurred while deleting the calibration report.")
+        calibration_report.delete()
+        return redirect('home')
 
 class DeleteShedToolsView(View):
     def get(self, request, shedtool_id):
@@ -1159,5 +1043,4 @@ class DeleteInstrumentFamilyGroupView(View):
         instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
         instrument_family.delete()
         return redirect('home')
-    
-                                                 
+
