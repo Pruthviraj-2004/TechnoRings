@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView,  ServiceOrderView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderView, VendorDetailsView1, VendorView
+from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, DeleteCalibrationReportView, DeleteDeliveryChallanView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView, ServiceOrderDeleteView,  ServiceOrderView, ShedDeleteView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportOrderDeleteView, TransportOrderView, VendorDeleteView, VendorDetailsView1, VendorView
 from . import views
 
 urlpatterns = [
@@ -36,5 +36,11 @@ urlpatterns = [
     path('add_vendor/', AddVendorView.as_view(), name='add_vendor'),
     path('add_vendor_handles/', AddVendorHandlesView.as_view(), name='add_vendor_handles'),
 
+    path('vendor/<int:vendor_id>/delete/', VendorDeleteView.as_view(), name='vendor_delete'),
+    path('shed/<int:shed_id>/delete/', ShedDeleteView.as_view(), name='delete_shed'),
+    path('transport_order/<int:movement_id>/delete/', TransportOrderDeleteView.as_view(), name='delete_transport_order'),
+    # path('service_order/<int:service_id>/delete/', ServiceOrderDeleteView.as_view(), name='service_order_delete'),
+    path('delivery_challan/<int:delivery_challan_id>/delete/', DeleteDeliveryChallanView.as_view(), name='delete_delivery_challan'),
+    path('calibration_report/<int:calibration_report_id>/delete/', DeleteCalibrationReportView.as_view(), name='delete_calibration_report'),
 
 ]

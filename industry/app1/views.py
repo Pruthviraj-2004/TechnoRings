@@ -1,6 +1,6 @@
 import json
 from django.forms import inlineformset_factory
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentFamilyGroupForm1, InstrumentForm, InstrumentGroupMasterForm, InstrumentGroupMasterForm1, InstrumentModelForm1, ServiceOrderForm, ServiceToolsForm, ShedDetailsForm, ShedToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
@@ -19,7 +19,9 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.db.models import Q
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db import transaction
 
 class VendorView(APIView):
     def get(self, request):
@@ -435,73 +437,6 @@ class VendorDetailsView1(APIView):
         vendor_handles_serializer = VendorHandlesSerializer(vendor_handles, many=True)
         return Response({'vendor': vendor_serializer.data, 'vendor_handles': vendor_handles_serializer.data})
     
-@method_decorator(csrf_exempt, name='dispatch')
-class DeliveryChallanView(View):
-    def get(self, request):
-        # Retrieve shed, vendor, and service details
-        sheds = ShedDetails.objects.all()
-        vendors = Vendor.objects.all()
-        services = ServiceOrder.objects.all()
-        instruments = InstrumentModel.objects.all()
-
-        # Create form instances
-        delivery_challan_form = DeliveryChallanForm()
-        delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
-        calibration_report_form = CalibrationReportForm()
-
-        # Pass form instances and context variables to the template
-        return render(request, 'app1/delivery_challan.html', {
-            'delivery_challan_form': delivery_challan_form,
-            'delivery_challan_tools_formset': delivery_challan_tools_formset,
-            'calibration_report_form': calibration_report_form,
-            'sheds': sheds,
-            'vendors': vendors,
-            'services': services,
-            'instruments': instruments,
-        })
-    
-    def post(self, request):
-        delivery_challan_form = DeliveryChallanForm(request.POST)
-        DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
-        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
-        calibration_report_form = CalibrationReportForm(request.POST)
-
-        if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
-            calibration_report = calibration_report_form.save(commit=False)
-            selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
-            calibration_frequency = selected_tool.calibration_frequency
-            calibration_report.calibration_tool = selected_tool
-                    
-            calibration_date = calibration_report.calibration_date
-            next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
-            calibration_report.next_calibration_date = next_calibration_date
-            
-            try:
-                vendor_handle = VendorHandles.objects.filter(tool=selected_tool).first()
-                if not vendor_handle:
-                    raise ObjectDoesNotExist("Vendor handle not found for the selected tool.")
-            except ObjectDoesNotExist:
-                return HttpResponse('Vendor handle not found for the selected tool.', status=400)
-            
-            turnaround_time = vendor_handle.turnaround_time
-            notification_date = next_calibration_date - timedelta(days=turnaround_time)
-            calibration_report.notification_date = notification_date
-            
-            calibration_report.save()
-            
-            delivery_challan = delivery_challan_form.save()
-
-            for form in delivery_challan_tools_formset:
-                if form.is_valid():
-                    tool_instance = form.save(commit=False)
-                    tool_instance.deliverychallan = delivery_challan
-                    tool_instance.calibration_report = calibration_report
-                    tool_instance.save() 
-                            
-            return redirect('home')
-        
-        return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
-
 # @method_decorator(csrf_exempt, name='dispatch')
 # class DeliveryChallanView(View):
 #     def get(self, request):
@@ -513,7 +448,6 @@ class DeliveryChallanView(View):
 
 #         # Create form instances
 #         delivery_challan_form = DeliveryChallanForm()
-#         DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
 #         delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
 #         calibration_report_form = CalibrationReportForm()
 
@@ -527,62 +461,130 @@ class DeliveryChallanView(View):
 #             'services': services,
 #             'instruments': instruments,
 #         })
-#     def post(self, request):
-#         # Parse the JSON payload sent from the frontend
-#         data = json.loads(request.body)
+    
+    # def post(self, request):
+    #     delivery_challan_form = DeliveryChallanForm(request.POST)
+    #     DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
+    #     delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
+    #     calibration_report_form = CalibrationReportForm(request.POST)
 
-#         # Extract data for each form from the payload
-#         delivery_challan_form_data = data.get('delivery_challan_form')
-#         delivery_challan_tools_formset_data = data.get('delivery_challan_tools_formset')
-#         calibration_report_form_data = data.get('calibration_report_form')
+    #     if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+    #         calibration_report = calibration_report_form.save(commit=False)
+    #         selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
+    #         calibration_frequency = selected_tool.calibration_frequency
+    #         calibration_report.calibration_tool = selected_tool
+                    
+    #         calibration_date = calibration_report.calibration_date
+    #         next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
+    #         calibration_report.next_calibration_date = next_calibration_date
+            
+    #         try:
+    #             vendor_handle = VendorHandles.objects.filter(tool=selected_tool).first()
+    #             if not vendor_handle:
+    #                 raise ObjectDoesNotExist("Vendor handle not found for the selected tool.")
+    #         except ObjectDoesNotExist:
+    #             return HttpResponse('Vendor handle not found for the selected tool.', status=400)
+            
+    #         turnaround_time = vendor_handle.turnaround_time
+    #         notification_date = next_calibration_date - timedelta(days=turnaround_time)
+    #         calibration_report.notification_date = notification_date
+            
+    #         calibration_report.save()
+            
+    #         delivery_challan = delivery_challan_form.save()
 
-#         # Create form instances using the extracted data
-#         delivery_challan_form = DeliveryChallanForm(delivery_challan_form_data)
-#         delivery_challan_tools_formset = DeliveryChallanToolsFormSet(delivery_challan_tools_formset_data)
-#         calibration_report_form = CalibrationReportForm(calibration_report_form_data)
+    #         for form in delivery_challan_tools_formset:
+    #             if form.is_valid():
+    #                 tool_instance = form.save(commit=False)
+    #                 tool_instance.deliverychallan = delivery_challan
+    #                 tool_instance.calibration_report = calibration_report
+    #                 tool_instance.save() 
+                            
+    #         return redirect('home')
+        
+    #     return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
 
-#         # Perform form validation
-#         if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
-#             calibration_report = calibration_report_form.save(commit=False)
-#             selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
-#             calibration_frequency = selected_tool.calibration_frequency
-#             calibration_report.calibration_tool = selected_tool
+@method_decorator(csrf_exempt, name='dispatch')
+class DeliveryChallanView(View):
+    def get(self, request):
+        # Retrieve shed, vendor, and service details
+        sheds = ShedDetails.objects.all()
+        vendors = Vendor.objects.all()
+        services = ServiceOrder.objects.all()
+        instruments = InstrumentModel.objects.all()
 
-#             calibration_date = calibration_report.calibration_date
-#             next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
-#             calibration_report.next_calibration_date = next_calibration_date
+        # Create form instances
+        delivery_challan_form = DeliveryChallanForm()
+        DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet()
+        calibration_report_form = CalibrationReportForm()
 
-#             try:
-#                 vendor_handle = VendorHandles.objects.filter(tool=selected_tool).first()
-#                 if not vendor_handle:
-#                     raise ObjectDoesNotExist("Vendor handle not found for the selected tool.")
-#             except ObjectDoesNotExist:
-#                 return JsonResponse({'error': 'Vendor handle not found for the selected tool.'}, status=400)
+        # Pass form instances and context variables to the template
+        return render(request, 'app1/delivery_challan.html', {
+            'delivery_challan_form': delivery_challan_form,
+            'delivery_challan_tools_formset': delivery_challan_tools_formset,
+            'calibration_report_form': calibration_report_form,
+            'sheds': sheds,
+            'vendors': vendors,
+            'services': services,
+            'instruments': instruments,
+        })
+    def post(self, request):
+        # Parse the JSON payload sent from the frontend
+        data = json.loads(request.body)
 
-#             turnaround_time = vendor_handle.turnaround_time
-#             notification_date = next_calibration_date - timedelta(days=turnaround_time)
-#             calibration_report.notification_date = notification_date
+        # Extract data for each form from the payload
+        delivery_challan_form_data = data.get('delivery_challan_form')
+        delivery_challan_tools_formset_data = data.get('delivery_challan_tools_formset')
+        calibration_report_form_data = data.get('calibration_report_form')
 
-#             calibration_report.save()
+        # Create form instances using the extracted data
+        delivery_challan_form = DeliveryChallanForm(delivery_challan_form_data)
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(delivery_challan_tools_formset_data)
+        calibration_report_form = CalibrationReportForm(calibration_report_form_data)
 
-#             delivery_challan = delivery_challan_form.save()
+        # Perform form validation
+        if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
+            calibration_report = calibration_report_form.save(commit=False)
+            selected_tool = delivery_challan_tools_formset.cleaned_data[0]['tool']
+            calibration_frequency = selected_tool.calibration_frequency
+            calibration_report.calibration_tool = selected_tool
 
-#             for form_data in delivery_challan_tools_formset_data:
-#                 form = DeliveryChallanToolsForm(form_data)
-#                 if form.is_valid():
-#                     tool_instance = form.save(commit=False)
-#                     tool_instance.deliverychallan = delivery_challan
-#                     tool_instance.calibration_report = calibration_report
-#                     tool_instance.save()
+            calibration_date = calibration_report.calibration_date
+            next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
+            calibration_report.next_calibration_date = next_calibration_date
 
-#             return JsonResponse({'success': True})  # Return a success response
-#         else:
-#             errors = {
-#                 'delivery_challan_errors': delivery_challan_form.errors,
-#                 'delivery_challan_tools_errors': delivery_challan_tools_formset.errors,
-#                 'calibration_report_errors': calibration_report_form.errors
-#             }
-#             return JsonResponse({'success': False, 'errors': errors}, status=400)             
+            try:
+                vendor_handle = VendorHandles.objects.filter(tool=selected_tool).first()
+                if not vendor_handle:
+                    raise ObjectDoesNotExist("Vendor handle not found for the selected tool.")
+            except ObjectDoesNotExist:
+                return JsonResponse({'error': 'Vendor handle not found for the selected tool.'}, status=400)
+
+            turnaround_time = vendor_handle.turnaround_time
+            notification_date = next_calibration_date - timedelta(days=turnaround_time)
+            calibration_report.notification_date = notification_date
+
+            calibration_report.save()
+
+            delivery_challan = delivery_challan_form.save()
+
+            for form_data in delivery_challan_tools_formset_data:
+                form = DeliveryChallanToolsForm(form_data)
+                if form.is_valid():
+                    tool_instance = form.save(commit=False)
+                    tool_instance.deliverychallan = delivery_challan
+                    tool_instance.calibration_report = calibration_report
+                    tool_instance.save()
+
+            return JsonResponse({'success': True})  # Return a success response
+        else:
+            errors = {
+                'delivery_challan_errors': delivery_challan_form.errors,
+                'delivery_challan_tools_errors': delivery_challan_tools_formset.errors,
+                'calibration_report_errors': calibration_report_form.errors
+            }
+            return JsonResponse({'success': False, 'errors': errors}, status=400)             
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AddInstrumentView(View):
@@ -600,7 +602,7 @@ class AddInstrumentView(View):
         instrument_family_group_form = InstrumentFamilyGroupForm1(request.POST)
         instrument_group_master_form = InstrumentGroupMasterForm1(request.POST)
         instrument_model_form = InstrumentModelForm1(request.POST)
-        
+        print(request.POST)
         if instrument_family_group_form.is_valid() and instrument_group_master_form.is_valid() and instrument_model_form.is_valid():
             # Save Instrument Group Master
             instrument_group_master = instrument_group_master_form.save()
@@ -911,4 +913,179 @@ class AddShedToolsView(View):
             # If form is not valid, return a JSON response with errors
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
+
+class VendorDeleteView(View):
+    def get(self, request, vendor_id):
+        vendor = Vendor.objects.get(pk=vendor_id)
+        return render(request, 'app1/delete_vendor.html', {'vendor': vendor})
+
+    def post(self, request, vendor_id):
+        vendor = get_object_or_404(Vendor, pk=vendor_id)
         
+        # Use atomic transaction to ensure all operations are rolled back if an error occurs
+        with transaction.atomic():
+            try:
+                # Delete related service orders
+                service_orders = ServiceOrder.objects.filter(vendor=vendor)
+                for service_order in service_orders:
+                    # Delete related service tools
+                    ServiceTools.objects.filter(service=service_order).delete()
+                    service_order.delete()
+                
+                # Delete related delivery challans
+                delivery_challans = DeliveryChallan.objects.filter(vendor=vendor)
+                for delivery_challan in delivery_challans:
+                    # Delete related delivery challan tools
+                    DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan).delete()
+                    delivery_challan.delete()
+
+                # Delete related vendor handles
+                VendorHandles.objects.filter(vendor=vendor).delete()
+
+                # Finally, delete the vendor
+                vendor.delete()
+                
+                # If everything is successful, redirect to home page
+                return redirect('home')
+            except Exception as e:
+                # If any error occurs, rollback the transaction and handle the error
+                transaction.rollback()
+                # You can log the error or display an error message to the user
+                return HttpResponseServerError("An error occurred while deleting the vendor.")
+
+class ShedDeleteView(View):
+    def get(self, request, shed_id):
+        shed = get_object_or_404(ShedDetails, pk=shed_id)
+        return render(request, 'app1/delete_shed.html', {'shed': shed})
+
+    def post(self, request, shed_id):
+        shed = get_object_or_404(ShedDetails, pk=shed_id)
+
+        # Use atomic transaction to ensure all operations are rolled back if an error occurs
+        with transaction.atomic():
+            try:
+                # Delete related transport orders where the shed is either source or destination
+                transport_orders = TransportOrder.objects.filter(Q(source_shed=shed) | Q(destination_shed=shed))
+                for transport_order in transport_orders:
+                    # Delete related transport tools
+                    TransportTools.objects.filter(transport=transport_order).delete()
+                transport_orders.delete()
+
+                # Delete related delivery challans where the shed is involved
+                delivery_challans = DeliveryChallan.objects.filter(shed=shed)
+                for delivery_challan in delivery_challans:
+                    # Delete related delivery challan tools
+                    DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan).delete()
+                delivery_challans.delete()
+
+                # Delete related shed tools
+                ShedTools.objects.filter(shed=shed).delete()
+
+                # Finally, delete the shed
+                shed.delete()
+
+                # If everything is successful, redirect to home page or any other appropriate page
+                return redirect('home')
+            except Exception as e:
+                # If any error occurs, rollback the transaction and handle the error
+                transaction.rollback()
+                # You can log the error or display an error message to the user
+                return HttpResponseServerError("An error occurred while deleting the shed.")
+            
+class TransportOrderDeleteView(View):
+    def get(self, request, movement_id):
+        transport_order = get_object_or_404(TransportOrder, pk=movement_id)
+        return render(request, 'app1/delete_transport_order.html', {'transport_order': transport_order})
+
+    def post(self, request, movement_id):
+        transport_order = get_object_or_404(TransportOrder, pk=movement_id)
+        
+        # Use atomic transaction to ensure all operations are rolled back if an error occurs
+        with transaction.atomic():
+            try:
+                # Delete related transport tools
+                TransportTools.objects.filter(transport=transport_order).delete()
+                
+                # Finally, delete the transport order
+                transport_order.delete()
+                
+                # If everything is successful, redirect to home page or any other appropriate page
+                return redirect('home')
+            except Exception as e:
+                # If any error occurs, rollback the transaction and handle the error
+                transaction.rollback()
+                # You can log the error or display an error message to the user
+                return HttpResponseServerError("An error occurred while deleting the transport order.")
+
+class ServiceOrderDeleteView(View):
+    def get(self, request, service_id):
+        # Retrieve the service order object or return 404 if not found
+        service_order = get_object_or_404(ServiceOrder, pk=service_id)
+        return render(request, 'app1/delete_service_order.html', {'service_order': service_order})
+
+    def post(self, request, service_id):
+        # Retrieve the service order object or return 404 if not found
+        service_order = get_object_or_404(ServiceOrder, pk=service_id)
+        
+        # Use atomic transaction to ensure all operations are rolled back if an error occurs
+        with transaction.atomic():
+            try:
+                # Delete related service tools
+                ServiceTools.objects.filter(service=service_order).delete()
+                
+                # Finally, delete the service order
+                service_order.delete()
+                
+                # If everything is successful, redirect to home page or any other appropriate page
+                return redirect('home')
+            except Exception as e:
+                # If any error occurs, rollback the transaction and handle the error
+                transaction.rollback()
+                # You can log the error or display an error message to the user
+                return HttpResponseServerError("An error occurred while deleting the service order.")
+
+class DeleteDeliveryChallanView(View):
+    def get(self, request, delivery_challan_id):
+        delivery_challan = get_object_or_404(DeliveryChallan, pk=delivery_challan_id)
+        return render(request, 'app1/delete_delivery_challan.html', {'delivery_challan': delivery_challan})
+
+    def post(self, request, delivery_challan_id):
+        delivery_challan = get_object_or_404(DeliveryChallan, pk=delivery_challan_id)
+
+        with transaction.atomic():
+            try:
+                # Delete related DeliveryChallanTools
+                delivery_challan.deliverychallantools_set.all().delete()
+
+                # Finally, delete the DeliveryChallan
+                delivery_challan.delete()
+
+                # If everything is successful, redirect to the home page or any other appropriate page
+                return redirect('home')
+            except Exception as e:
+                # If any error occurs, rollback the transaction and handle the error
+                transaction.rollback()
+                # You can log the error or display an error message to the user
+                return HttpResponseServerError("An error occurred while deleting the delivery challan.")
+
+class DeleteCalibrationReportView(View):
+    def get(self, request, calibration_report_id):
+        calibration_report = get_object_or_404(CalibrationReport, pk=calibration_report_id)
+        return render(request, 'app1/delete_calibration_report.html', {'calibration_report': calibration_report})
+
+    def post(self, request, calibration_report_id):
+        calibration_report = get_object_or_404(CalibrationReport, pk=calibration_report_id)
+
+        with transaction.atomic():
+            try:
+                # Delete the calibration report
+                calibration_report.delete()
+
+                # If everything is successful, redirect to the home page or any other appropriate page
+                return redirect('home')
+            except Exception as e:
+                # If any error occurs, rollback the transaction and handle the error
+                transaction.rollback()
+                # You can log the error or display an error message to the user
+                return HttpResponseServerError("An error occurred while deleting the calibration report.")
+                        

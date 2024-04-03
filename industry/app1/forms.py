@@ -92,7 +92,7 @@ class InstrumentFamilyGroupForm1(forms.ModelForm):
 class InstrumentGroupMasterForm1(forms.ModelForm):
     instrument_group_name = forms.CharField(max_length=24)
     instrument_group_code = forms.CharField(max_length=8)
-
+    instrument_type = forms.CharField(max_length=12)
     class Meta:
         model = InstrumentGroupMaster
         fields = []
