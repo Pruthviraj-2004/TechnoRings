@@ -117,7 +117,6 @@ class VendorForm(forms.ModelForm):
         model = Vendor
         fields = '__all__'
 
-
 class VendorHandlesForm(forms.ModelForm):
     class Meta:
         model = VendorHandles
