@@ -865,7 +865,7 @@ class AddShedToolsView(View):
         # Create a dictionary with the extracted data
         shed_tools_data = {
             'shed': shed_id,
-            'tool': tool_id
+            'using_tool': tool_id
         }
 
         # Create a ShedToolsForm instance with the extracted data
@@ -880,7 +880,6 @@ class AddShedToolsView(View):
             # If form is not valid, return a JSON response with errors
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
-
 
 class VendorDeleteView(View):
     def get(self, request, vendor_id):
