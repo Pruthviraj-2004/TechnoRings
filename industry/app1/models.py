@@ -125,6 +125,9 @@ class DeliveryChallan(models.Model):
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan_id} - Vendor: {self.vendor.name}"
 
+def default_report_file():
+    return 'samplereport.txt'
+
 class CalibrationReport(models.Model):
     calibrationtool_id = models.AutoField(primary_key=True)
     calibration_tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
@@ -136,6 +139,7 @@ class CalibrationReport(models.Model):
     next_calibration_date = models.DateField()
     notification_date = models.DateField()
     remark = models.TextField()
+    calibration_report_file = models.FileField(upload_to='calibration_reports/', default=default_report_file,max_length=250,null=True)
 
     def __str__(self):
         return f"Calibration Tool: {self.calibration_tool} - Notification Date: {self.notification_date}"  
@@ -148,3 +152,5 @@ class DeliveryChallanTools(models.Model):
 
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan.deliverychallan_id} - Tool ID: {self.tool.instrument_no}"
+
+    

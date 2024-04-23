@@ -1,6 +1,6 @@
 import json
 from django.forms import inlineformset_factory
-from django.http import HttpResponse, HttpResponseServerError, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render,  redirect
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentFamilyGroupForm1, InstrumentForm, InstrumentGroupMasterForm, InstrumentGroupMasterForm1, InstrumentModelForm1, ServiceOrderForm, ServiceToolsForm, ShedDetailsForm, ShedToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
@@ -35,6 +35,12 @@ class InstrumentToolsView(APIView):
     def get(self, request):
         instruments = InstrumentModel.objects.all()
         serializer = InstrumentModelSerializer(instruments, many=True)
+        return Response({'instrument_models': serializer.data})
+
+class InstrumentServiceToolsView(APIView):
+    def get(self, request):
+        instruments = InstrumentModel.objects.filter(service_status=True)
+        serializer = InstrumentModelSerializer(instruments, many=True)        
         return Response({'instrument_models': serializer.data})
 
 class InstrumentFamilyGroupView(APIView):
@@ -365,9 +371,8 @@ class DeliveryChallanView(View):
     
     def post(self, request):
         delivery_challan_form = DeliveryChallanForm(request.POST)
-        DeliveryChallanToolsFormSet = inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
-        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST)
-        calibration_report_form = CalibrationReportForm(request.POST)
+        delivery_challan_tools_formset = DeliveryChallanToolsFormSet(request.POST, request.FILES)
+        calibration_report_form = CalibrationReportForm(request.POST, request.FILES)
 
         if calibration_report_form.is_valid() and delivery_challan_form.is_valid() and delivery_challan_tools_formset.is_valid():
             calibration_report = calibration_report_form.save(commit=False)
@@ -404,7 +409,7 @@ class DeliveryChallanView(View):
             return redirect('home')
         
         return render(request, 'app1/delivery_challan.html', {'delivery_challan_form': delivery_challan_form, 'delivery_challan_tools_formset': delivery_challan_tools_formset, 'calibration_report_form': calibration_report_form})
-
+    
 # @method_decorator(csrf_exempt, name='dispatch')
 # class DeliveryChallanView(View):
 #     def get(self, request):
@@ -1042,3 +1047,17 @@ def update_service_status(request):
 
     return JsonResponse({'success': True, 'message': 'Service status updated successfully'})
  
+# def create_news(request):
+#     if request.method == 'POST':
+#         form = NewsForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('news_list')
+#     else:
+#         form = NewsForm()
+#     return render(request, 'app1/create_news.html', {'form': form})
+
+# def news_list(request):
+    
+#     news = News.objects.all()
+#     return render(request, 'app1/news_list.html', {'news': news})

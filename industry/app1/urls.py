@@ -1,6 +1,6 @@
 from django import views
 from django.urls import path
-from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, DeleteCalibrationReportView, DeleteDeliveryChallanToolsView, DeleteDeliveryChallanView, DeleteInstrumentFamilyGroupView, DeleteInstrumentGroupMasterView, DeleteInstrumentModelView, DeleteServiceToolsView, DeleteShedToolsView, DeleteTransportToolsView, DeleteVendorHandlesView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentToolsView, InstrumentTransportHistoryView, ServiceOrderDeleteView,  ServiceOrderView, ShedDeleteView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportAcknowledgmentView, TransportOrderDeleteView, TransportOrderView, VendorDeleteView, VendorDetailsView1, VendorView, update_service_status
+from .views import AddInstrumentFamilyView, AddInstrumentGroupMasterView, AddInstrumentModelView1, AddInstrumentView, AddShedDetailsView, AddShedToolsView, AddVendorHandlesView, AddVendorView, DeleteCalibrationReportView, DeleteDeliveryChallanToolsView, DeleteDeliveryChallanView, DeleteInstrumentFamilyGroupView, DeleteInstrumentGroupMasterView, DeleteInstrumentModelView, DeleteServiceToolsView, DeleteShedToolsView, DeleteTransportToolsView, DeleteVendorHandlesView, GenerateBillView, InstrumentFamilyGroupView, InstrumentGroupMasterView, InstrumentServiceHistoryView, InstrumentServiceToolsView, InstrumentToolsView, InstrumentTransportHistoryView, ServiceOrderDeleteView,  ServiceOrderView, ShedDeleteView, ShedDetailAPIView, ShedDetailView1, ShedDetailsView, ShedToolsView, TransportAcknowledgmentView, TransportOrderDeleteView, TransportOrderView, VendorDeleteView, VendorDetailsView1, VendorView, update_service_status
 from . import views
 
 urlpatterns = [
@@ -15,6 +15,7 @@ urlpatterns = [
     path('instrument-tools/', InstrumentToolsView.as_view(), name='instrument_tools'),
     path('instrument-family-group-tools/', InstrumentFamilyGroupView.as_view(), name='instrument_family_group_tools'),
     path('instrument-group-master-tools/', InstrumentGroupMasterView.as_view(), name='instrument_group_master_tools'),
+    path('instrument-service-tools/', InstrumentServiceToolsView.as_view(), name='instrument_service_tools'),
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
     path('vendor/', VendorView.as_view(), name='vendor'),
@@ -25,7 +26,7 @@ urlpatterns = [
     path('instrument-transport-history/<int:instrument_id>/', InstrumentTransportHistoryView.as_view(), name='instrument_transport_history'),
     path('instrument-service-history/<int:instrument_id>/', InstrumentServiceHistoryView.as_view(), name='instrument_service_history'),
 
-    path('add_instrument/', AddInstrumentView.as_view(), name='add_instrument'),
+    #path('add_instrument/', AddInstrumentView.as_view(), name='add_instrument'),
     path('add_instrument1/', AddInstrumentModelView1.as_view(), name='add_instrument1'),
     path('add_instrument_group_master/', AddInstrumentGroupMasterView.as_view(), name='add_instrument_group_master'),
     path('add_instrument_family/', AddInstrumentFamilyView.as_view(), name='add_instrument_family'),
@@ -52,6 +53,5 @@ urlpatterns = [
     path('transport/<int:order_id>/acknowledge/', TransportAcknowledgmentView.as_view(), name='transport_acknowledge'),
 
     path('update-service-status/', update_service_status, name='update_service_status'),
-
 
 ]

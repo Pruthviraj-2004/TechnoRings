@@ -80,7 +80,7 @@ class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
         # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date','remark']
-        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark']
+        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark','calibration_report_file']
 
 DeliveryChallanToolsFormSet = forms.inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
 
@@ -121,3 +121,4 @@ class VendorHandlesForm(forms.ModelForm):
     class Meta:
         model = VendorHandles
         fields = '__all__'
+
