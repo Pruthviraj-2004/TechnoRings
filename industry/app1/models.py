@@ -38,6 +38,7 @@ class InstrumentModel(models.Model):
     least_count = models.CharField(max_length=8, blank=True, null=True)
     type_of_tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING)
     calibration_frequency = models.IntegerField()
+    service_status = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.instrument_name} ({self.type_of_tool})"

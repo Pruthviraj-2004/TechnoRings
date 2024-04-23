@@ -14,8 +14,8 @@ class InstrumentFamilyGroupAdmin(admin.ModelAdmin):
 
 @admin.register(InstrumentModel)
 class InstrumentModelAdmin(admin.ModelAdmin):
-    list_display = ('instrument_no', 'instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'type_of_tool', 'calibration_frequency')
-    list_filter = ('manufacturer_name', 'year_of_purchase', 'type_of_tool', 'calibration_frequency')
+    list_display = ('instrument_no', 'instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'type_of_tool', 'calibration_frequency','service_status')
+    list_filter = ('manufacturer_name', 'year_of_purchase', 'type_of_tool', 'calibration_frequency','service_status')
     search_fields = ('instrument_name', 'manufacturer_name', 'description')
 
     def get_return_instrument_names(self, obj):
