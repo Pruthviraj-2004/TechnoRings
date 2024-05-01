@@ -1061,3 +1061,29 @@ def update_service_status(request):
     
 #     news = News.objects.all()
 #     return render(request, 'app1/news_list.html', {'news': news})
+
+class StoreDeliveryChallan(APIView):
+    def post(self, request):
+        data = request.data
+        
+        # Create DeliveryChallan instance
+        delivery_challan_form = DeliveryChallanForm(data)
+        if delivery_challan_form.is_valid():
+            delivery_challan = delivery_challan_form.save()
+
+            # Create CalibrationReport and DeliveryChallanTools instances for each toolData
+            tool_data = data.get('toolData', [])
+            for tool_info in tool_data:
+                calibration_report_form = CalibrationReportForm(tool_info)
+                if calibration_report_form.is_valid():
+                    calibration_report = calibration_report_form.save(commit=False)
+                    calibration_report.calibration_tool_id = tool_info['tool_id']
+                    calibration_report.save()
+
+                    delivery_challan_tool = DeliveryChallanTools(deliverychallan=delivery_challan, tool_id=tool_info['tool_id'], calibration_report=calibration_report)
+                    delivery_challan_tool.save()
+
+            return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+        else:
+            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+        

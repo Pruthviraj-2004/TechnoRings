@@ -74,13 +74,15 @@ class DeliveryChallanForm(forms.ModelForm):
 class DeliveryChallanToolsForm(forms.ModelForm):
     class Meta:
         model = DeliveryChallanTools
-        fields = ['tool']
+        fields = ['tool', 'calibration_report']
 
 class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
         # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date','remark']
-        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark','calibration_report_file']
+        # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark','calibration_report_file']
+        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
+
 
 DeliveryChallanToolsFormSet = forms.inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
 

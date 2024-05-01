@@ -1,19 +1,19 @@
 from django.contrib import admin
 from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ShedDetails, ShedTools, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles
-
+from import_export.admin import ImportExportModelAdmin
 
 @admin.register(InstrumentGroupMaster)
-class InstrumentGroupMasterAdmin(admin.ModelAdmin):
+class InstrumentGroupMasterAdmin(ImportExportModelAdmin):
     list_display = ('tool_id', 'tool_group_name', 'tool_group_code', 'instrument_type')
 
 @admin.register(InstrumentFamilyGroup)
-class InstrumentFamilyGroupAdmin(admin.ModelAdmin):
+class InstrumentFamilyGroupAdmin(ImportExportModelAdmin):
     list_display = ('instrumentfamilyid', 'instrument_family_name', 'instrument_group_master')
     search_fields = ('instrument_family_name',)
     list_filter = ('instrument_group_master',)
 
 @admin.register(InstrumentModel)
-class InstrumentModelAdmin(admin.ModelAdmin):
+class InstrumentModelAdmin(ImportExportModelAdmin):
     list_display = ('instrument_no', 'instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'type_of_tool', 'calibration_frequency','service_status')
     list_filter = ('manufacturer_name', 'year_of_purchase', 'type_of_tool', 'calibration_frequency','service_status')
     search_fields = ('instrument_name', 'manufacturer_name', 'description')
@@ -28,45 +28,45 @@ class InstrumentModelAdmin(admin.ModelAdmin):
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 @admin.register(ShedDetails)
-class ShedDetailsAdmin(admin.ModelAdmin):
+class ShedDetailsAdmin(ImportExportModelAdmin):
     list_display = ('shed_id', 'name', 'location', 'phone_number')
     search_fields = ('name', 'location', 'phone_number')
 
 @admin.register(ShedTools)
-class ShedToolsAdmin(admin.ModelAdmin):
+class ShedToolsAdmin(ImportExportModelAdmin):
     list_display = ('shedtool_id', 'shed', 'using_tool')
     list_filter = ('shed', 'using_tool')
     search_fields = ('shed__name', 'using_tool__instrument_name')
 
 @admin.register(ServiceOrder)
-class ServiceOrderAdmin(admin.ModelAdmin):
+class ServiceOrderAdmin(ImportExportModelAdmin):
     list_display = ('service_id', 'date', 'amount', 'description')
     list_filter = ('date',)
 
 @admin.register(ServiceTools)
-class ServiceToolsAdmin(admin.ModelAdmin):
+class ServiceToolsAdmin(ImportExportModelAdmin):
     list_display = ('servicetool_id', 'service', 'tool', 'vendor')  # Include 'vendor' if you added it to the model
     list_filter = ('service','vendor')
 
 @admin.register(TransportOrder)
-class TransportOrderAdmin(admin.ModelAdmin):
+class TransportOrderAdmin(ImportExportModelAdmin):
     list_display = ('movement_id', 'movement_date', 'source_shed', 'destination_shed', 'acknowledgment', 'tool_count')
     list_filter = ('source_shed', 'destination_shed', 'acknowledgment')
     search_fields = ('movement_id',)
 
 @admin.register(TransportTools)
-class TransportToolsAdmin(admin.ModelAdmin):
+class TransportToolsAdmin(ImportExportModelAdmin):
     list_display = ('transporttool_id', 'transport', 'tool')
     list_filter = ('transport',)
     search_fields = ('transport__movement_id', 'tool__instrument_name')
 
 @admin.register(Vendor)
-class VendorAdmin(admin.ModelAdmin):
+class VendorAdmin(ImportExportModelAdmin):
     list_display = ('vendor_id', 'name', 'location', 'address', 'phone_number')
     search_fields = ('name', 'location', 'phone_number')
 
 @admin.register(VendorHandles)
-class VendorHandlesAdmin(admin.ModelAdmin):
+class VendorHandlesAdmin(ImportExportModelAdmin):
     list_display = ('vendorhandle_id', 'vendor_name', 'tool_id', 'turnaround_time', 'cost')
 
     def vendor_name(self, obj):
@@ -80,19 +80,19 @@ class VendorHandlesAdmin(admin.ModelAdmin):
     tool_id.short_description = 'Tool ID'
 
 @admin.register(DeliveryChallan)
-class DeliveryChallanAdmin(admin.ModelAdmin):
+class DeliveryChallanAdmin(ImportExportModelAdmin):
     list_display = ('deliverychallan_id', 'received_date', 'vendor', 'shed', 'service')
     list_filter = ('vendor', 'shed', 'service')
     search_fields = ('deliverychallan_id', 'vendor__name')
 
 @admin.register(DeliveryChallanTools)
-class DeliveryChallanToolsAdmin(admin.ModelAdmin):
+class DeliveryChallanToolsAdmin(ImportExportModelAdmin):
     list_display = ('deliverychallantool_id', 'deliverychallan', 'tool','calibration_report')
     list_filter = ('deliverychallan__vendor',)
     search_fields = ('deliverychallan__vendor__name',)
 
 @admin.register(CalibrationReport)
-class CalibrationAdmin(admin.ModelAdmin):
+class CalibrationAdmin(ImportExportModelAdmin):
     list_display = ('calibrationtool_id', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date','notification_date', 'remark', 'calibration_tool')
     list_filter = ('calibration_date', 'calibration_agency', 'action', 'notification_date')
     search_fields = ('calibration_report_no', 'calibration_agency')
