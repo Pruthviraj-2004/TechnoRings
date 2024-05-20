@@ -58,11 +58,6 @@ class VendorSerializer(serializers.ModelSerializer):
         model = Vendor
         fields = '__all__'
 
-# class VendorHandlesSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = VendorHandles
-#         fields = '__all__'
-
 class VendorHandlesSerializer(serializers.ModelSerializer):
     tool_name = serializers.CharField(source='tool.instrument_name', read_only=True)
 
@@ -84,4 +79,5 @@ class CalibrationReportSerializer(serializers.ModelSerializer):
 class DeliveryChallanToolsSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorHandles
-        fields = '__all__'        
+        fields = '__all__'    
+            
