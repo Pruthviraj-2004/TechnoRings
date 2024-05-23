@@ -12,6 +12,8 @@ class InstrumentFamilyGroupSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InstrumentModelSerializer(serializers.ModelSerializer):
+    shed_name = serializers.SerializerMethodField()
+
     class Meta:
         model = InstrumentModel
         fields = '__all__'
@@ -68,16 +70,16 @@ class VendorHandlesSerializer(serializers.ModelSerializer):
 
 class DeliveryChallanSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VendorHandles
+        model = DeliveryChallan
         fields = '__all__'
 
 class CalibrationReportSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VendorHandles
+        model = CalibrationReport
         fields = '__all__'
 
 class DeliveryChallanToolsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VendorHandles
-        fields = '__all__'    
-            
+        model = DeliveryChallanTools
+        fields = '__all__'  
+          

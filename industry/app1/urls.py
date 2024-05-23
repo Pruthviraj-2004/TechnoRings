@@ -11,7 +11,7 @@ urlpatterns = [
     path('add-transport-order/', TransportOrderView.as_view(), name='add_transport_order'),
     path('service-order/', ServiceOrderView.as_view(), name='service-order'),
     path('generate_bill/<int:service_order_id>/', GenerateBillView.as_view(), name='generate_bill'),
-    path('delivery_challan/', views.DeliveryChallanView.as_view(), name='delivery_challan'),
+    path('store-delivery-challan/', StoreDeliveryChallan.as_view(), name='store_delivery_challan'),
 
     path('instrument-tools/', InstrumentToolsView.as_view(), name='instrument_tools'),
     path('instrument-family-group-tools/', InstrumentFamilyGroupView.as_view(), name='instrument_family_group_tools'),
@@ -20,6 +20,7 @@ urlpatterns = [
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
     path('vendor/', VendorView.as_view(), name='vendor'),
+    path('vendor_handles/', VendorHandlesView.as_view(), name='vendor_handles'),
     path('shed_detail/<int:shed_id>/', ShedDetailAPIView.as_view(), name='api_shed_detail'),
     path('vendor_details/<int:vendor_id>/', VendorDetailsView1.as_view(), name='vendor_details'),
 
@@ -28,6 +29,7 @@ urlpatterns = [
 
     path('transport_orders/<int:movement_id>/', TransportOrderViews.as_view(), name='transport_order_detail'),
     path('service_orders/<int:service_id>/', ServiceOrderViews.as_view(), name='service_order_detail'),
+    path('delivery-challans/<int:deliverychallan_id>/', DeliveryChallanViews.as_view(), name='delivery-challan-detail'),
 
     path('add_instrument1/', AddInstrumentModelView1.as_view(), name='add_instrument1'),
     path('add_instrument_group_master/', AddInstrumentGroupMasterView.as_view(), name='add_instrument_group_master'),
@@ -56,8 +58,12 @@ urlpatterns = [
 
     path('update-service-status/', update_service_status, name='update_service_status'),
 
-    path('store-delivery-challan/', StoreDeliveryChallan.as_view(), name='store_delivery_challan'),
 
+    path('all_transport_orders/', AllTransportOrderView.as_view(), name='all-transport-orders'),
+    path('recent_transport_orders/', RecentTransportOrderView.as_view(), name='recent-transport-orders'),
+    path('all_service_orders/', AllServiceOrderView.as_view(), name='all-service-orders'),
+    path('recent_service_orders/', RecentServiceOrderView.as_view(), name='recent-service-orders'),
 
+    path('count_of/', CountOfObjects.as_view(), name='count_of'),
 
 ]
