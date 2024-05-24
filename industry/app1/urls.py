@@ -58,12 +58,13 @@ urlpatterns = [
 
     path('update-service-status/', update_service_status, name='update_service_status'),
 
-
     path('all_transport_orders/', AllTransportOrderView.as_view(), name='all-transport-orders'),
     path('recent_transport_orders/', RecentTransportOrderView.as_view(), name='recent-transport-orders'),
     path('all_service_orders/', AllServiceOrderView.as_view(), name='all-service-orders'),
     path('recent_service_orders/', RecentServiceOrderView.as_view(), name='recent-service-orders'),
-
+    path('all_delivery_challan/', AllDeliveryChallanView.as_view(), name='all-delivery-challan'),
+    path('recent_delivery_challan/', RecentDeliveryChallanView.as_view(), name='recent-delivery-challan'),
+    
     path('count_of/', CountOfObjects.as_view(), name='count_of'),
 
 ]

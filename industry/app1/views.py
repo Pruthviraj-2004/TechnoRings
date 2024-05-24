@@ -94,7 +94,18 @@ class RecentServiceOrderView(APIView):
         recent_service_orders = ServiceOrder.objects.order_by('-date')[:10]
         serializer = ServiceOrderSerializer(recent_service_orders, many=True)
         return Response({'service_orders': serializer.data})
-
+    
+class AllDeliveryChallanView(APIView):
+    def get(self, request):
+        delivery_challan = DeliveryChallan.objects.all()
+        serializer = DeliveryChallanSerializer(delivery_challan, many=True)
+        return Response({'delivery_challan': serializer.data})
+    
+class RecentDeliveryChallanView(APIView):
+    def get(self, request):
+        recent_delivery_challan = DeliveryChallan.objects.order_by('-received_date')[:10]
+        serializer = DeliveryChallanSerializer(recent_delivery_challan, many=True)
+        return Response({'delivery_challan': serializer.data})
 
 class CalibrationReportView(APIView):
     def get(self, request):
@@ -757,6 +768,7 @@ class AddShedToolsView(View):
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class VendorDeleteView(View):
     def get(self, request, vendor_id):
         vendor = Vendor.objects.get(pk=vendor_id)
@@ -770,6 +782,7 @@ class VendorDeleteView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ShedDeleteView(View):
     def get(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
@@ -783,6 +796,7 @@ class ShedDeleteView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class TransportOrderDeleteView(View):
     def get(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
@@ -796,6 +810,7 @@ class TransportOrderDeleteView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ServiceOrderDeleteView(View):
     def get(self, request, service_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
@@ -809,6 +824,7 @@ class ServiceOrderDeleteView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteDeliveryChallanView(View):
     def get(self, request, delivery_challan_id):
         delivery_challan = get_object_or_404(DeliveryChallan, pk=delivery_challan_id)
@@ -822,6 +838,7 @@ class DeleteDeliveryChallanView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteCalibrationReportView(View):
     def get(self, request, calibration_report_id):
         calibration_report = get_object_or_404(CalibrationReport, pk=calibration_report_id)
@@ -835,6 +852,7 @@ class DeleteCalibrationReportView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteShedToolsView(View):
     def get(self, request, shedtool_id):
         shed_tool = get_object_or_404(ShedTools, pk=shedtool_id)
@@ -848,6 +866,7 @@ class DeleteShedToolsView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteTransportToolsView(View):
     def get(self, request, transporttool_id):
         transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
@@ -861,6 +880,7 @@ class DeleteTransportToolsView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteServiceToolsView(View):
     def get(self, request, servicetool_id):
         service_tool = get_object_or_404(ServiceTools, pk=servicetool_id)
@@ -874,6 +894,7 @@ class DeleteServiceToolsView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteDeliveryChallanToolsView(View):
     def get(self, request, deliverychallantool_id):
         delivery_challan_tool = get_object_or_404(DeliveryChallanTools, pk=deliverychallantool_id)
@@ -887,6 +908,7 @@ class DeleteDeliveryChallanToolsView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteVendorHandlesView(View):
     def get(self, request, vendorhandle_id):
         vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
@@ -900,6 +922,7 @@ class DeleteVendorHandlesView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteInstrumentGroupMasterView(View):
     def get(self, request, tool_id):
         instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
@@ -913,6 +936,7 @@ class DeleteInstrumentGroupMasterView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteInstrumentFamilyGroupView(View):
     def get(self, request, instrumentfamilyid):
         instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
@@ -926,6 +950,7 @@ class DeleteInstrumentFamilyGroupView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteInstrumentModelView(View):
     def get(self, request, instrument_no):
         instrument_model = get_object_or_404(InstrumentModel, pk=instrument_no)
@@ -959,3 +984,4 @@ class CountOfObjects(View):
         }
         
         return JsonResponse(data)
+

@@ -12,8 +12,6 @@ class InstrumentFamilyGroupSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InstrumentModelSerializer(serializers.ModelSerializer):
-    shed_name = serializers.SerializerMethodField()
-
     class Meta:
         model = InstrumentModel
         fields = '__all__'
