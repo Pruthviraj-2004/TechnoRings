@@ -30,6 +30,11 @@ class ShedDetailsSerializer(serializers.ModelSerializer):
         model = ShedDetails
         fields = '__all__'
 
+class ServiceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceType
+        fields = '__all__'
+
 class ServiceToolsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceTools
@@ -51,6 +56,11 @@ class TransportOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TransportOrder
+        fields = '__all__'
+
+class VendorTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorType
         fields = '__all__'
 
 class VendorSerializer(serializers.ModelSerializer):

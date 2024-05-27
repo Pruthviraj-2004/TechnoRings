@@ -19,10 +19,12 @@ urlpatterns = [
     path('instrument-service-tools/', InstrumentServiceToolsView.as_view(), name='instrument_service_tools'),
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
+    path('vendor_types/', VendorTypeView.as_view(), name='vendor_type'),
     path('vendor/', VendorView.as_view(), name='vendor'),
     path('vendor_handles/', VendorHandlesView.as_view(), name='vendor_handles'),
     path('shed_detail/<int:shed_id>/', ShedDetailAPIView.as_view(), name='api_shed_detail'),
     path('vendor_details/<int:vendor_id>/', VendorDetailsView1.as_view(), name='vendor_details'),
+    path('service_types/', ServiceTypeView.as_view(), name='service-type-list'),
 
     path('instrument-transport-history/<int:instrument_id>/', InstrumentTransportHistoryView.as_view(), name='instrument_transport_history'),
     path('instrument-service-history/<int:instrument_id>/', InstrumentServiceHistoryView.as_view(), name='instrument_service_history'),

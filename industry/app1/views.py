@@ -3,18 +3,22 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 from .forms import CalibrationReportForm, DeliveryChallanForm, InstrumentFamilyGroupForm, InstrumentForm, InstrumentGroupMasterForm, ShedDetailsForm, ShedToolsForm, VendorForm, VendorHandlesForm
-from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
+from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-
+class VendorTypeView(APIView):
+    def get(self, request):
+        vendor_types = VendorType.objects.all()
+        serializer = VendorTypeSerializer(vendor_types, many=True)
+        return Response({'vendor_types': serializer.data})
 
 class InstrumentToolsView(APIView):
     def get(self, request):
@@ -148,6 +152,12 @@ class DeliveryChallanViews(APIView):
             'delivery_challan': delivery_challan_serializer.data, 
             'delivery_challan_tools': delivery_challan_tools_serializer.data
         })
+    
+class ServiceTypeView(APIView):
+    def get(self, request):
+        service_types = ServiceType.objects.all()
+        serializer = ServiceTypeSerializer(service_types, many=True)
+        return Response(serializer.data)
 
 def home(request):
     return render(request, 'app1/home.html')
