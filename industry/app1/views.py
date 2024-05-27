@@ -1,24 +1,17 @@
 import json
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render,  redirect
+from django.http import JsonResponse
+from django.shortcuts import render
 from django.views import View
-# from .forms import CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentFamilyGroupForm1, InstrumentForm, InstrumentGroupMasterForm, InstrumentGroupMasterForm1, InstrumentModelForm1, ServiceOrderForm, ServiceToolsForm, ShedDetailsForm, ShedToolsForm, TransportMovementOrderForm,TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
-# from .models import InstrumentFamilyGroup, InstrumentGroupMaster, TransportOrder, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
-from .models import *
-from .forms import *
+from .forms import CalibrationReportForm, DeliveryChallanForm, InstrumentFamilyGroupForm, InstrumentForm, InstrumentGroupMasterForm, ShedDetailsForm, ShedToolsForm, VendorForm, VendorHandlesForm
+from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-# from .serializers import CalibrationReportSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
-from .serializers import *
+from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from .models import ServiceOrder, ServiceTools
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from datetime import timedelta
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction
 from django.utils import timezone
 
 
