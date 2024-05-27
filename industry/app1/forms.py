@@ -79,9 +79,7 @@ class DeliveryChallanToolsForm(forms.ModelForm):
 class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
-        # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date','remark']
-        # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark','calibration_report_file']
-        fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
+        # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
         fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
 
 

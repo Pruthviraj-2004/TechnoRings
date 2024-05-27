@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ShedDetails, ShedTools, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles
+from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ServiceType, ShedDetails, ShedTools, ServiceOrder, ServiceTools, TransportOrder, TransportTools, Vendor, VendorHandles, VendorType
 from import_export.admin import ImportExportModelAdmin
 
 @admin.register(InstrumentGroupMaster)
@@ -38,6 +38,11 @@ class ShedToolsAdmin(ImportExportModelAdmin):
     list_filter = ('shed', 'using_tool')
     search_fields = ('shed__name', 'using_tool__instrument_name')
 
+@admin.register(ServiceType)
+class ServiceTypeAdmin(admin.ModelAdmin):
+    list_display = ('servicetype_id', 'service_type')
+    search_fields = ('service_type',)
+
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(ImportExportModelAdmin):
     list_display = ('service_id', 'date', 'amount', 'description')
@@ -45,8 +50,8 @@ class ServiceOrderAdmin(ImportExportModelAdmin):
 
 @admin.register(ServiceTools)
 class ServiceToolsAdmin(ImportExportModelAdmin):
-    list_display = ('servicetool_id', 'service', 'tool', 'vendor')  # Include 'vendor' if you added it to the model
-    list_filter = ('service','vendor')
+    list_display = ('servicetool_id', 'service', 'tool', 'vendor','service_type')
+    list_filter = ('service','vendor','service_type')
 
 @admin.register(TransportOrder)
 class TransportOrderAdmin(ImportExportModelAdmin):
@@ -57,13 +62,19 @@ class TransportOrderAdmin(ImportExportModelAdmin):
 @admin.register(TransportTools)
 class TransportToolsAdmin(ImportExportModelAdmin):
     list_display = ('transporttool_id', 'transport', 'tool')
-    list_filter = ('transport',)
+    list_filter = ('transport','tool')
     search_fields = ('transport__movement_id', 'tool__instrument_name')
+
+@admin.register(VendorType)
+class VendorTypeAdmin(admin.ModelAdmin):
+    list_display = ('vendortype_id', 'vendor_type')
+    search_fields = ('vendor_type',)
 
 @admin.register(Vendor)
 class VendorAdmin(ImportExportModelAdmin):
-    list_display = ('vendor_id', 'name', 'location', 'address', 'phone_number')
-    search_fields = ('name', 'location', 'phone_number')
+    list_display = ('vendor_id', 'name', 'location', 'address', 'phone_number', 'email', 'nabl_number','vendor_type')
+    search_fields = ('name', 'location', 'phone_number', 'email', 'nabl_number')
+    list_filter = ('location',)
 
 @admin.register(VendorHandles)
 class VendorHandlesAdmin(ImportExportModelAdmin):

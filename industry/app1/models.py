@@ -1,11 +1,25 @@
 from django.db import models
 
+class VendorType(models.Model):
+    vendortype_id = models.AutoField(primary_key=True)
+    vendor_type = models.CharField(max_length=32)
+
+    def __str__(self):
+        return f"VendorType: {self.vendor_type}"
+
+def default_certificate_file():
+    return 'vendor_certificates/samplereport.txt'
+
 class Vendor(models.Model):
     vendor_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=24)
     location = models.CharField(max_length=16)
     address = models.CharField(max_length=64)
-    phone_number = models.CharField(max_length=10)
+    phone_number = models.CharField(max_length=12)
+    email = models.EmailField(default='abc@gmail.com')
+    nabl_number = models.CharField(max_length=32, default='1717171717', blank=True, null=True)
+    nabl_certificate = models.FileField(upload_to='vendor_certificates/', default=default_certificate_file, max_length=250 , blank=True, null=True)
+    vendor_type = models.ForeignKey(VendorType, on_delete=models.SET_DEFAULT, default=2)
 
     def __str__(self):
         return f"Vendor Name: {self.name}"
@@ -69,19 +83,27 @@ class TransportOrder(models.Model):
     tool_count = models.IntegerField()
 
     def __str__(self):
-        return f"Movement ID: {self.movement_id} - Date: {self.movement_date}"
+        return f"Tool Movement ID: {self.movement_id} - Date: {self.movement_date}"
 
 class TransportTools(models.Model):
     transporttool_id = models.AutoField(primary_key=True)
     transport = models.ForeignKey(TransportOrder, on_delete=models.CASCADE)
     tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
+    tool_movement_remarks = models.TextField(default="good", blank=True, null=True)
 
     class Meta:
         unique_together = ('transport', 'tool')
 
     def __str__(self):
-        return f"TransportTool ID: {self.transporttool_id} - Transport ID: {self.transport.movement_id} - Tool ID: {self.tool.instrument_no}"
- 
+        return f"Transport ID: {self.transport.movement_id} - Tool ID: {self.tool.instrument_no}"
+
+class ServiceType(models.Model):
+    servicetype_id = models.AutoField(primary_key=True)
+    service_type = models.CharField(max_length=32)
+
+    def __str__(self):
+        return f"ServiceType: {self.service_type}"
+
 class ServiceOrder(models.Model):
     service_id = models.AutoField(primary_key=True)
     date = models.DateField()
@@ -97,7 +119,9 @@ class ServiceTools(models.Model):
     servicetool_id = models.AutoField(primary_key=True)
     service = models.ForeignKey(ServiceOrder, on_delete=models.CASCADE)
     tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)  # Add this field
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    service_type = models.ForeignKey(ServiceType, on_delete=models.SET_DEFAULT, default=1)
+    service_remarks = models.TextField(default="good", blank=True, null=True)
 
     def __str__(self):
         return f"Service ID: {self.service.service_id} - Tool ID: {self.tool.instrument_no} - Service Vendor: {self.vendor}"
@@ -139,7 +163,7 @@ class CalibrationReport(models.Model):
     next_calibration_date = models.DateField()
     notification_date = models.DateField()
     remark = models.TextField()
-    calibration_report_file = models.FileField(upload_to='calibration_reports/', default=default_report_file,max_length=250,null=True)
+    calibration_report_file = models.FileField(upload_to='calibration_reports/', default=default_report_file, max_length=250 ,null=True)
 
     def __str__(self):
         return f"Calibration Tool: {self.calibration_tool} - Notification Date: {self.notification_date}"  

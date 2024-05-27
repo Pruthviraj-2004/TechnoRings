@@ -215,10 +215,6 @@ class TransportOrderView(APIView):
             acknowledgment = serializer.validated_data.get('acknowledgment', False)
             tools_data = request.data.get('tools', [])
 
-            # Retrieve source and destination shed objects
-            # source_shed = get_object_or_404(ShedDetails, pk=source_shed_id)
-            # destination_shed = get_object_or_404(ShedDetails, pk=destination_shed_id)
-
             # Create the transport order
             transport_order = TransportOrder.objects.create(
                 movement_date=movement_date,
@@ -231,8 +227,9 @@ class TransportOrderView(APIView):
             # Create tools associated with the transport order
             for tool_data in tools_data:
                 tool_id = tool_data.get('tool')
+                tool_movement_remarks = tool_data.get('tool_movement_remarks', 'good')
                 tool = get_object_or_404(InstrumentModel, pk=tool_id)
-                TransportTools.objects.create(transport=transport_order, tool=tool)
+                TransportTools.objects.create(transport=transport_order, tool=tool, tool_movement_remarks=tool_movement_remarks)
 
             return JsonResponse({'success': True}, status=status.HTTP_201_CREATED)
         else:
@@ -343,10 +340,13 @@ class ServiceOrderView(APIView):
             for tool_data in tools_data:
                 tool_id = tool_data.get('tool')
                 vendor_id = tool_data.get('vendor')
+                servicetype_id = tool_data.get('servicetype')
                 tool = get_object_or_404(InstrumentModel, pk=tool_id)
                 vendor = get_object_or_404(Vendor, pk=vendor_id)
+                service_type = get_object_or_404(ServiceType, pk=servicetype_id)
+                service_remarks = tool_data.get('service_remarks', 'good')
 
-                ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor)
+                ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
 
             # Return success response with service order ID
             return Response({'success': True, 'service_order_id': service_order.id}, status=status.HTTP_201_CREATED)
@@ -624,25 +624,39 @@ class AddVendorView(View):
         return render(request, 'app1/vendor_form.html', {'form': form})
 
     def post(self, request):
-        # Parse JSON data from the request body
-        body_data = json.loads(request.body)
+        # Check if the content type is JSON
+        if request.content_type == 'application/json':
+            # Parse JSON data from the request body
+            try:
+                body_data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
 
-        # Extract vendor details from the parsed data
-        name = body_data.get('name')
-        location = body_data.get('location')
-        address = body_data.get('address')
-        phone_number = body_data.get('phone_number')
+            # Extract vendor details from the parsed data
+            name = body_data.get('name')
+            location = body_data.get('location')
+            address = body_data.get('address')
+            phone_number = body_data.get('phone_number')
+            email = body_data.get('email')
+            nabl_number = body_data.get('nabl_number')
+            vendor_type = body_data.get('vendor_type')
 
-        # Create a dictionary with the extracted data
-        vendor_data = {
-            'name': name,
-            'location': location,
-            'address': address,
-            'phone_number': phone_number
-        }
+            # Create a dictionary with the extracted data
+            vendor_data = {
+                'name': name,
+                'location': location,
+                'address': address,
+                'phone_number': phone_number,
+                'email': email,
+                'nabl_number': nabl_number,
+                'vendor_type': vendor_type
+            }
 
-        # Create a VendorForm instance with the extracted data
-        form = VendorForm(vendor_data)
+            # Create a VendorForm instance with the extracted data
+            form = VendorForm(vendor_data)
+        else:
+            # If content type is not JSON, assume it's a form submission
+            form = VendorForm(request.POST, request.FILES)
 
         # Check if the form is valid
         if form.is_valid():
@@ -652,7 +666,7 @@ class AddVendorView(View):
         else:
             # If form is not valid, return a JSON response with errors
             errors = form.errors.as_json()
-            return JsonResponse({'success': False, 'errors': errors})
+            return JsonResponse({'success': False, 'errors': errors}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AddVendorHandlesView(View):
