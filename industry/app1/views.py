@@ -328,7 +328,7 @@ class ServiceOrderView(APIView):
             'service_orders': service_order_serializer.data,
             'service_tools': service_tools_serializer.data,
             'vendors': vendor_serializer.data,
-            'instrument_tools' : instrument_serializer.data,
+            'instrument_tools': instrument_serializer.data,
         }
 
         return Response(response_data)
@@ -343,16 +343,16 @@ class ServiceOrderView(APIView):
             for tool_data in tools_data:
                 tool_id = tool_data.get('tool')
                 vendor_id = tool_data.get('vendor')
-                servicetype_id = tool_data.get('servicetype')
+                service_type_id = tool_data.get('service_type')  # Adjusted key
                 tool = get_object_or_404(InstrumentModel, pk=tool_id)
                 vendor = get_object_or_404(Vendor, pk=vendor_id)
-                service_type = get_object_or_404(ServiceType, pk=servicetype_id)
+                service_type = get_object_or_404(ServiceType, pk=service_type_id)  # Correct lookup
                 service_remarks = tool_data.get('service_remarks', 'good')
 
                 ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
 
             # Return success response with service order ID
-            return Response({'success': True, 'service_order_id': service_order.id}, status=status.HTTP_201_CREATED)
+            return Response({'success': True}, status=status.HTTP_201_CREATED)
         else:
             # Return error response if service order data is not valid
             return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
