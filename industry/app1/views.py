@@ -13,6 +13,8 @@ from django.utils.decorators import method_decorator
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 class VendorTypeView(APIView):
     def get(self, request):
@@ -389,7 +391,7 @@ class GenerateBillView(View):
 
             for vendor_handle in vendor_handles:
                 cost = vendor_handle.cost
-                amount = 1 * cost  # Assuming each tool has a count of 1
+                amount = 1 * cost 
                 total_amount += amount
                 bill_items.append({'tool': tool.instrument_name, 'cost': cost, 'amount': amount})
 
@@ -399,8 +401,44 @@ class GenerateBillView(View):
         }
         return JsonResponse(data)
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class StoreDeliveryChallan(APIView):
+#     def post(self, request):
+#         data = request.data
+        
+#         # Create DeliveryChallan instance
+#         delivery_challan_form = DeliveryChallanForm(data)
+#         if delivery_challan_form.is_valid():
+#             delivery_challan = delivery_challan_form.save()
+
+#             # Create DeliveryChallanTools instances for each toolData
+#             tool_data = data.get('toolData', [])
+#             for tool_info in tool_data:
+#                 # Create CalibrationReport instance
+#                 calibration_report_form = CalibrationReportForm(tool_info)
+#                 if calibration_report_form.is_valid():
+#                     calibration_report = calibration_report_form.save(commit=False)
+#                     calibration_report.calibration_tool_id = tool_info.get('calibration_tool')
+#                     calibration_report.save()
+
+#                     # Create DeliveryChallanTools instance
+#                     delivery_challan_tool = DeliveryChallanTools(
+#                         deliverychallan=delivery_challan,
+#                         tool_id=tool_info.get('calibration_tool'),
+#                         calibration_report=calibration_report
+#                     )
+#                     delivery_challan_tool.save()
+
+#             return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    
     def post(self, request):
         data = request.data
         
@@ -412,11 +450,19 @@ class StoreDeliveryChallan(APIView):
             # Create DeliveryChallanTools instances for each toolData
             tool_data = data.get('toolData', [])
             for tool_info in tool_data:
+                # Extract file from tool_info
+                file = tool_info.get('file')
+                
                 # Create CalibrationReport instance
-                calibration_report_form = CalibrationReportForm(tool_info)
+                calibration_report_form = CalibrationReportForm(tool_info, {'file': file})
                 if calibration_report_form.is_valid():
                     calibration_report = calibration_report_form.save(commit=False)
                     calibration_report.calibration_tool_id = tool_info.get('calibration_tool')
+                    
+                    # If there's a file, attach it to the calibration report
+                    if file:
+                        calibration_report.file = file
+                    
                     calibration_report.save()
 
                     # Create DeliveryChallanTools instance
@@ -430,7 +476,7 @@ class StoreDeliveryChallan(APIView):
             return JsonResponse({'success': True, 'message': 'Data saved successfully'})
         else:
             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
-        
+
 # class InstrumentTransportHistoryView(View):
 #     def get(self, request, instrument_id):
 #         instrument = InstrumentModel.objects.get(pk=instrument_id)
