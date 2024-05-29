@@ -434,7 +434,6 @@ class GenerateBillView(View):
 #             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
 
 
-
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -447,35 +446,58 @@ class StoreDeliveryChallan(APIView):
         if delivery_challan_form.is_valid():
             delivery_challan = delivery_challan_form.save()
 
-            # Create DeliveryChallanTools instances for each toolData
-            tool_data = data.get('toolData', [])
-            for tool_info in tool_data:
-                # Extract file from tool_info
-                file = tool_info.get('file')
-                
-                # Create CalibrationReport instance
-                calibration_report_form = CalibrationReportForm(tool_info, {'file': file})
+            # Process each tool's data
+            tool_data_list = []
+            index = 0
+            while True:
+                tool_data = {
+                    'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
+                    'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
+                    'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
+                    'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
+                    'result': data.get(f'toolData[{index}][result]'),
+                    'action': data.get(f'toolData[{index}][action]'),
+                    'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
+                    'remark': data.get(f'toolData[{index}][remark]'),
+                    'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]')
+                }
+                if not tool_data['calibration_tool']:
+                    break
+                tool_data_list.append(tool_data)
+                index += 1
+
+            # Collect errors for each tool's calibration report form
+            errors = []
+            for tool_info in tool_data_list:
+                calibration_report_form = CalibrationReportForm(tool_info, {'calibration_report_file': tool_info['calibration_report_file']})
                 if calibration_report_form.is_valid():
                     calibration_report = calibration_report_form.save(commit=False)
-                    calibration_report.calibration_tool_id = tool_info.get('calibration_tool')
+                    calibration_report.calibration_tool_id = tool_info['calibration_tool']
                     
-                    # If there's a file, attach it to the calibration report
-                    if file:
-                        calibration_report.file = file
+                    if tool_info['calibration_report_file']:
+                        calibration_report.file = tool_info['calibration_report_file']
                     
                     calibration_report.save()
 
                     # Create DeliveryChallanTools instance
                     delivery_challan_tool = DeliveryChallanTools(
                         deliverychallan=delivery_challan,
-                        tool_id=tool_info.get('calibration_tool'),
+                        tool_id=tool_info['calibration_tool'],
                         calibration_report=calibration_report
                     )
                     delivery_challan_tool.save()
+                else:
+                    errors.append({
+                        'tool': tool_info['calibration_tool'],
+                        'errors': calibration_report_form.errors
+                    })
 
-            return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+            if errors:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            else:
+                return JsonResponse({'success': True, 'message': 'Data saved successfully'})
         else:
-            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors},status=400)
 
 # class InstrumentTransportHistoryView(View):
 #     def get(self, request, instrument_id):
