@@ -440,7 +440,7 @@ class StoreDeliveryChallan(APIView):
     
     def post(self, request):
         data = request.data
-        
+
         # Create DeliveryChallan instance
         delivery_challan_form = DeliveryChallanForm(data)
         if delivery_challan_form.is_valid():
@@ -459,6 +459,7 @@ class StoreDeliveryChallan(APIView):
                     'action': data.get(f'toolData[{index}][action]'),
                     'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
                     'remark': data.get(f'toolData[{index}][remark]'),
+                    'notification_date': data.get(f'toolData[{index}][notification_date]'),
                     'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]')
                 }
                 if not tool_data['calibration_tool']:
@@ -469,13 +470,13 @@ class StoreDeliveryChallan(APIView):
             # Collect errors for each tool's calibration report form
             errors = []
             for tool_info in tool_data_list:
-                calibration_report_form = CalibrationReportForm(tool_info, {'calibration_report_file': tool_info['calibration_report_file']})
+                calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
                 if calibration_report_form.is_valid():
                     calibration_report = calibration_report_form.save(commit=False)
                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
                     
                     if tool_info['calibration_report_file']:
-                        calibration_report.file = tool_info['calibration_report_file']
+                        calibration_report.calibration_report_file = tool_info['calibration_report_file']
                     
                     calibration_report.save()
 
@@ -497,8 +498,7 @@ class StoreDeliveryChallan(APIView):
             else:
                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
         else:
-            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors},status=400)
-
+            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
 # class InstrumentTransportHistoryView(View):
 #     def get(self, request, instrument_id):
 #         instrument = InstrumentModel.objects.get(pk=instrument_id)
@@ -751,8 +751,8 @@ class AddVendorHandlesView(View):
         body_data = json.loads(request.body)
 
         # Extract vendor handle details from the parsed data
-        vendor_id = body_data.get('vendor_id')
-        tool_id = body_data.get('tool_id')
+        vendor_id = body_data.get('vendor')
+        tool_id = body_data.get('tool')
         turnaround_time = body_data.get('turnaround_time')
         cost = body_data.get('cost')
 

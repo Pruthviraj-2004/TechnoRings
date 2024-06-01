@@ -69,11 +69,11 @@ class VendorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class VendorHandlesSerializer(serializers.ModelSerializer):
-    # tool_name = serializers.CharField(source='tool.instrument_name', read_only=True), 'tool_name'
+    tool_name = serializers.CharField(source='tool.instrument_name', read_only=True)
 
     class Meta:
         model = VendorHandles
-        fields = ['vendorhandle_id', 'turnaround_time', 'cost', 'vendor', 'tool']
+        fields = ['vendorhandle_id', 'turnaround_time', 'cost', 'vendor', 'tool', 'tool_name']
 
 
 class DeliveryChallanSerializer(serializers.ModelSerializer):

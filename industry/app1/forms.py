@@ -76,12 +76,22 @@ class DeliveryChallanToolsForm(forms.ModelForm):
         model = DeliveryChallanTools
         fields = ['tool', 'calibration_report']
 
+# class CalibrationReportForm(forms.ModelForm):
+#     class Meta:
+#         model = CalibrationReport
+#         # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
+#         fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark','calibration_report_file']
 class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
-        # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
-        fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark','calibration_report_file']
+        fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_report_file','notification_date']
 
+    def _init_(self, *args, **kwargs):
+        # Pop the file from kwargs and handle it separately if necessary
+        files = kwargs.pop('files', None)
+        super(CalibrationReportForm, self)._init_(*args, **kwargs)
+        if files:
+            self.files=files
 
 DeliveryChallanToolsFormSet = forms.inlineformset_factory(DeliveryChallan, DeliveryChallanTools, form=DeliveryChallanToolsForm, extra=1)
 
