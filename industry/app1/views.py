@@ -354,10 +354,11 @@ class ServiceOrderView(APIView):
                 ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
 
             # Return success response with service order ID
-            return Response({'success': True}, status=status.HTTP_201_CREATED)
+            return Response({'success': True, 'serviceorder_id': service_order.id}, status=status.HTTP_201_CREATED)
         else:
             # Return error response if service order data is not valid
             return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # class GenerateBillView(View):
 #     def get(self, request, service_order_id):
