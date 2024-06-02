@@ -5,7 +5,7 @@ class VendorType(models.Model):
     vendor_type = models.CharField(max_length=32)
 
     def __str__(self):
-        return f"VendorType: {self.vendor_type}"
+        return f"{self.vendor_type}"
 
 def default_certificate_file():
     return 'vendor_certificates/samplereport.txt'
@@ -22,7 +22,7 @@ class Vendor(models.Model):
     vendor_type = models.ForeignKey(VendorType, on_delete=models.SET_DEFAULT, default=1)
 
     def __str__(self):
-        return f"Vendor Name: {self.name}"
+        return f"{self.name}"
 
 class InstrumentGroupMaster(models.Model):
     tool_id = models.AutoField(primary_key=True)
@@ -31,7 +31,8 @@ class InstrumentGroupMaster(models.Model):
     instrument_type = models.CharField(max_length=32)
 
     def __str__(self):
-        return f"Tool Group Name: {self.tool_group_name}"
+        # return f"Tool Group Name: {self.tool_group_name}"
+        return f"{self.tool_group_name}"
 
 class InstrumentFamilyGroup(models.Model):
     instrumentfamilyid = models.AutoField(primary_key=True)
@@ -39,7 +40,7 @@ class InstrumentFamilyGroup(models.Model):
     instrument_group_master = models.ForeignKey(InstrumentGroupMaster, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Instrument Family Name: {self.instrument_family_name}"
+        return f"{self.instrument_family_name}"
 
 class InstrumentModel(models.Model):
     instrument_no = models.AutoField(primary_key=True)
@@ -55,7 +56,7 @@ class InstrumentModel(models.Model):
     service_status = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Instrument No: {self.instrument_name} - ({self.type_of_tool})"
+        return f"{self.instrument_name} - ({self.type_of_tool})"
 
 class ShedDetails(models.Model):
     shed_id = models.AutoField(primary_key=True)
@@ -64,7 +65,7 @@ class ShedDetails(models.Model):
     phone_number = models.CharField(max_length=12)
 
     def __str__(self):
-        return f"Shed: {self.name}"
+        return f"{self.name}"
 
 class ShedTools(models.Model):
     shedtool_id = models.AutoField(primary_key=True)
