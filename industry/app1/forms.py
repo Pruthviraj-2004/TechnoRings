@@ -74,20 +74,18 @@ class DeliveryChallanForm(forms.ModelForm):
 class DeliveryChallanToolsForm(forms.ModelForm):
     class Meta:
         model = DeliveryChallanTools
-        fields = ['tool', 'calibration_report']
+        fields = ['tool']
 
-# class CalibrationReportForm(forms.ModelForm):
-#     class Meta:
-#         model = CalibrationReport
-#         # fields = ['calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark']
-#         fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'notification_date', 'remark','calibration_report_file']
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tool'].queryset = kwargs.get('tool_queryset', InstrumentModel.objects.none())
+        
 class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
-        fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_report_file','notification_date']
+        fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_report_file', 'calibration_report_file2','notification_date']
 
     def _init_(self, *args, **kwargs):
-        # Pop the file from kwargs and handle it separately if necessary
         files = kwargs.pop('files', None)
         super(CalibrationReportForm, self)._init_(*args, **kwargs)
         if files:

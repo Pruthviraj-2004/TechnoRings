@@ -49,44 +49,31 @@
                     <td>Action:</td>
                     <td><input type="text" name="action"></td>
                 </tr>
-                {% comment %} <tr>
-                    <td>Next Calibration Date:</td>
-                    <td><input type="text" name="next_calibration_date"></td>
-                </tr>
-                <tr>
-                    <td>Notifiction Calibration Date:</td>
-                    <td><input type="text" name="notification_date"></td>
-                </tr> {% endcomment %}
                 <tr>
                     <td>Remark:</td>
                     <td><input type="text" name="remark"></td>
                 </tr>
-
                 <tr>
                     <td>Calibration Report File:</td>
                     <td><input type="file" name="calibration_report_file"></td>
                 </tr>
-                
+                <tr>
+                    <td>Calibration Report File 2:</td>
+                    <td><input type="file" name="calibration_report_file2"></td>
+                </tr>
             </tbody>
         </table>
     
         <h2>Tool Details</h2>
-        {{ delivery_challan_tools_formset.management_form }}
-        <table>
-            <thead>
-                <tr>
-                    <th>Tool</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for form in delivery_challan_tools_formset %}
-                <tr>
-                    <td>{{ form.tool }}</td>
-                </tr>
+            
+            <label for="instrument_dropdown">Select Instrument:</label>
+            <select name="instrument" id="instrument_dropdown">
+                {% for instrument in instruments %}
+                    <option value="{{ instrument.instrument_no }}">{{ instrument.instrument_name }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
-        <button type="submit">Submit</button>
+            </select>
+    
+            <button type="submit">Submit</button>
     </form>
 </body>
 </html>

@@ -68,5 +68,6 @@ urlpatterns = [
     path('recent_delivery_challan/', RecentDeliveryChallanView.as_view(), name='recent-delivery-challan'),
     
     path('count_of/', CountOfObjects.as_view(), name='count_of'),
+    path('transport_acknowledge_tools/<int:order_id>/', TransportAcknowledgmentToolsView.as_view(), name='transport_acknowledge_tools'),
 
 ]

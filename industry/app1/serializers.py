@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import *
+from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
 
 class InstrumentGroupMasterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -74,7 +74,6 @@ class VendorHandlesSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorHandles
         fields = ['vendorhandle_id', 'turnaround_time', 'cost', 'vendor', 'tool', 'tool_name']
-
 
 class DeliveryChallanSerializer(serializers.ModelSerializer):
     class Meta:

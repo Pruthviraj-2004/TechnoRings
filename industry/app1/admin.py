@@ -45,7 +45,7 @@ class ServiceTypeAdmin(admin.ModelAdmin):
 
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(ImportExportModelAdmin):
-    list_display = ('service_id', 'date', 'amount', 'description')
+    list_display = ('service_id', 'date', 'amount', 'description', 'created_at','updated_at')
     list_filter = ('date',)
 
 @admin.register(ServiceTools)
@@ -55,13 +55,13 @@ class ServiceToolsAdmin(ImportExportModelAdmin):
 
 @admin.register(TransportOrder)
 class TransportOrderAdmin(ImportExportModelAdmin):
-    list_display = ('movement_id', 'movement_date', 'source_shed', 'destination_shed', 'acknowledgment', 'tool_count')
+    list_display = ('movement_id', 'movement_date', 'source_shed', 'destination_shed', 'acknowledgment', 'tool_count', 'created_at','updated_at')
     list_filter = ('source_shed', 'destination_shed', 'acknowledgment')
     search_fields = ('movement_id',)
 
 @admin.register(TransportTools)
 class TransportToolsAdmin(ImportExportModelAdmin):
-    list_display = ('transporttool_id', 'transport', 'tool')
+    list_display = ('transporttool_id', 'transport', 'tool','acknowledgment')
     list_filter = ('transport','tool')
     search_fields = ('transport__movement_id', 'tool__instrument_name')
 
@@ -79,6 +79,8 @@ class VendorAdmin(ImportExportModelAdmin):
 @admin.register(VendorHandles)
 class VendorHandlesAdmin(ImportExportModelAdmin):
     list_display = ('vendorhandle_id', 'vendor_name', 'tool_id', 'turnaround_time', 'cost')
+    list_filter = ('vendor', 'tool')
+    search_fields = ('vendor__name', 'tool__instrument_name', 'turnaround_time')
 
     def vendor_name(self, obj):
         return obj.vendor.name
@@ -92,7 +94,7 @@ class VendorHandlesAdmin(ImportExportModelAdmin):
 
 @admin.register(DeliveryChallan)
 class DeliveryChallanAdmin(ImportExportModelAdmin):
-    list_display = ('deliverychallan_id', 'received_date', 'vendor', 'shed', 'service')
+    list_display = ('deliverychallan_id', 'received_date', 'vendor', 'shed', 'service', 'created_at','updated_at')
     list_filter = ('vendor', 'shed', 'service')
     search_fields = ('deliverychallan_id', 'vendor__name')
 
