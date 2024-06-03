@@ -383,31 +383,7 @@ class ServiceOrderView(APIView):
         }
 
         return Response(response_data)
-
-    # def post(self, request):
-    #     order_serializer = ServiceOrderSerializer(data=request.data)
-        
-    #     if order_serializer.is_valid():
-    #         service_order = order_serializer.save()
-
-    #         tools_data = request.data.get('tools', [])
-    #         for tool_data in tools_data:
-    #             tool_id = tool_data.get('tool')
-    #             vendor_id = tool_data.get('vendor')
-    #             service_type_id = tool_data.get('service_type')
-    #             tool = get_object_or_404(InstrumentModel, pk=tool_id)
-    #             vendor = get_object_or_404(Vendor, pk=vendor_id)
-    #             service_type = get_object_or_404(ServiceType, pk=service_type_id)
-    #             service_remarks = tool_data.get('service_remarks', 'good')
-
-    #             ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
-
-    #         # Return success response with service order ID
-    #         return Response({'success': True, 'serviceorder_id': service_order.service_id}, status=status.HTTP_201_CREATED)
-    #     else:
-    #         # Return error response if service order data is not valid
-    #         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
     def post(self, request):
         order_serializer = ServiceOrderSerializer(data=request.data)
         
@@ -415,8 +391,6 @@ class ServiceOrderView(APIView):
             service_order = order_serializer.save()
 
             tools_data = request.data.get('tools', [])
-            total_amount = 0
-
             for tool_data in tools_data:
                 tool_id = tool_data.get('tool')
                 vendor_id = tool_data.get('vendor')
@@ -426,23 +400,49 @@ class ServiceOrderView(APIView):
                 service_type = get_object_or_404(ServiceType, pk=service_type_id)
                 service_remarks = tool_data.get('service_remarks', 'good')
 
-                service_tool = ServiceTools.objects.create(service=service_order,tool=tool,vendor=vendor,service_type=service_type,service_remarks=service_remarks)
+                ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
 
-                # Calculate the cost if the service type is 'calibration'
-                if service_tool.service_type.service_type.lower() == 'calibration':
-                    vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
-                    for vendor_handle in vendor_handles:
-                        total_amount += vendor_handle.cost
-
-            # Update the service order amount with the calculated total amount
-            service_order.amount = total_amount
-            service_order.save()
-
-            # Return success response with service order ID and total amount
-            return Response({'success': True, 'serviceorder_id': service_order.service_id, 'total_amount': total_amount}, status=status.HTTP_201_CREATED)
+            # Return success response with service order ID
+            return Response({'success': True, 'serviceorder_id': service_order.service_id}, status=status.HTTP_201_CREATED)
         else:
             # Return error response if service order data is not valid
             return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # def post(self, request):
+    #     order_serializer = ServiceOrderSerializer(data=request.data)
+        
+    #     if order_serializer.is_valid():
+    #         service_order = order_serializer.save()
+
+    #         tools_data = request.data.get('tools', [])
+    #         total_amount = 0
+
+    #         for tool_data in tools_data:
+    #             tool_id = tool_data.get('tool')
+    #             vendor_id = tool_data.get('vendor')
+    #             service_type_id = tool_data.get('service_type')
+    #             tool = get_object_or_404(InstrumentModel, pk=tool_id)
+    #             vendor = get_object_or_404(Vendor, pk=vendor_id)
+    #             service_type = get_object_or_404(ServiceType, pk=service_type_id)
+    #             service_remarks = tool_data.get('service_remarks', 'good')
+
+    #             service_tool = ServiceTools.objects.create(service=service_order,tool=tool,vendor=vendor,service_type=service_type,service_remarks=service_remarks)
+
+    #             # Calculate the cost if the service type is 'calibration'
+    #             if service_tool.service_type.service_type.lower() == 'calibration':
+    #                 vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+    #                 for vendor_handle in vendor_handles:
+    #                     total_amount += vendor_handle.cost
+
+    #         # Update the service order amount with the calculated total amount
+    #         service_order.amount = total_amount
+    #         service_order.save()
+
+    #         # Return success response with service order ID and total amount
+    #         return Response({'success': True, 'serviceorder_id': service_order.service_id, 'total_amount': total_amount}, status=status.HTTP_201_CREATED)
+    #     else:
+    #         # Return error response if service order data is not valid
+    #         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class GenerateBillView(View):
 #     def get(self, request, service_order_id):
@@ -621,7 +621,7 @@ class InstrumentServiceHistoryView(APIView):
                 'amount': service_tool.service.amount,
                 'description': service_tool.service.description,
                 'tool_count': service_tool.service.tool_count,
-                'vendor': service_tool.service.vendor.name  # Assuming you have a 'name' field in Vendor model
+                'vendor': service_tool.service.vendor.name
             }
             serialized_service_history.append(service_order_data)
         
@@ -699,9 +699,9 @@ class AddInstrumentGroupMasterView(View):
         body_data = json.loads(request.body)
 
         # Extract instrument group master details from the parsed data
-        tool_group_name = body_data.get('tool_group_name')
-        tool_group_code = body_data.get('tool_group_code')
-        instrument_type = body_data.get('instrument_type')
+        tool_group_name = body_data.get('toolGroupName')
+        tool_group_code = body_data.get('toolGroupCode')
+        instrument_type = body_data.get('instrumentType')
 
         # Create a dictionary with the extracted data
         instrument_group_master_data = {
