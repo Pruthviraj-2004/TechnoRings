@@ -31,7 +31,6 @@ class InstrumentGroupMaster(models.Model):
     instrument_type = models.CharField(max_length=32)
 
     def __str__(self):
-        # return f"Tool Group Name: {self.tool_group_name}"
         return f"{self.tool_group_name}"
 
 class InstrumentFamilyGroup(models.Model):
@@ -109,7 +108,7 @@ class ServiceType(models.Model):
     service_type = models.CharField(max_length=32)
 
     def __str__(self):
-        return f"ServiceType: {self.service_type}"
+        return f"{self.service_type}"
 
 class ServiceOrder(models.Model):
     service_id = models.AutoField(primary_key=True)

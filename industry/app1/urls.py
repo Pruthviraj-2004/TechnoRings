@@ -19,10 +19,10 @@ urlpatterns = [
     path('instrument-service-tools/', InstrumentServiceToolsView.as_view(), name='instrument_service_tools'),
     path('shed-details/', ShedDetailsView.as_view(), name='shed_details'),
     path('shed-tools/', ShedToolsView.as_view(), name='shed_tools'),
+    path('shed_detail/<int:shed_id>/', ShedDetailAPIView.as_view(), name='api_shed_detail'),
     path('vendor_types/', VendorTypeView.as_view(), name='vendor_type'),
     path('vendor/', VendorView.as_view(), name='vendor'),
     path('vendor_handles/', VendorHandlesView.as_view(), name='vendor_handles'),
-    path('shed_detail/<int:shed_id>/', ShedDetailAPIView.as_view(), name='api_shed_detail'),
     path('vendor_details/<int:vendor_id>/', VendorDetailsView1.as_view(), name='vendor_details'),
     path('service_types/', ServiceTypeView.as_view(), name='service-type-list'),
 
@@ -57,7 +57,7 @@ urlpatterns = [
     path('instrument/<int:instrument_no>/delete/', DeleteInstrumentModelView.as_view(), name='delete_instrument_model'),
 
     path('transport/<int:order_id>/acknowledge/', TransportAcknowledgmentView.as_view(), name='transport_acknowledge'),
-
+    path('transport_acknowledge_tools/<int:order_id>/', TransportAcknowledgmentToolsView.as_view(), name='transport_acknowledge_tools'),
     path('update-service-status/', update_service_status, name='update_service_status'),
 
     path('all_transport_orders/', AllTransportOrderView.as_view(), name='all-transport-orders'),
@@ -68,6 +68,6 @@ urlpatterns = [
     path('recent_delivery_challan/', RecentDeliveryChallanView.as_view(), name='recent-delivery-challan'),
     
     path('count_of/', CountOfObjects.as_view(), name='count_of'),
-    path('transport_acknowledge_tools/<int:order_id>/', TransportAcknowledgmentToolsView.as_view(), name='transport_acknowledge_tools'),
 
+    path ('calibration_reports/', CalibrationReportView.as_view(), name="all-calibration-reports"),
 ]
