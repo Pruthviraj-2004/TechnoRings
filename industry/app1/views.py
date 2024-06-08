@@ -264,6 +264,44 @@ class TransportAcknowledgmentView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     
+# @method_decorator(csrf_exempt, name='dispatch')
+# class TransportAcknowledgmentToolsView(View):
+#     def get(self, request, order_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=order_id)
+#         return render(request, 'app1/transport_acknowledge_tools.html', {'transport_order': transport_order})
+
+#     def post(self, request, order_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=order_id)
+
+#         # Get the tools to be acknowledged from the request
+#         tool_ids = request.POST.getlist('tool_ids')
+
+#         # Filter out any empty values from tool_ids
+#         tool_ids = [tool_id for tool_id in tool_ids if tool_id]
+
+#         try:
+#             with transaction.atomic():
+#                 # Get the tools for this transport order
+#                 selected_tools = TransportTools.objects.filter(transport=transport_order, tool_id__in=tool_ids)
+
+#                 # Update the selected tools acknowledgment to True
+#                 selected_tools.update(acknowledgment=True)
+
+#                 # Update ShedTools from source shed to destination shed for selected tools
+#                 source_shed = transport_order.source_shed
+#                 destination_shed = transport_order.destination_shed
+#                 transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
+#                 transported_tools.update(shed=destination_shed)
+
+#                 # Check if all tools for the transport order are acknowledged
+#                 all_tools_acknowledged = not TransportTools.objects.filter(transport=transport_order, acknowledgment=False).exists()
+#                 transport_order.acknowledgment = all_tools_acknowledged
+#                 transport_order.save()
+
+#                 return JsonResponse({'success': True, 'message': 'Selected tools acknowledgment updated successfully.'})
+#         except Exception as e:
+#             return JsonResponse({'success': False, 'error': str(e)})
+
 @method_decorator(csrf_exempt, name='dispatch')
 class TransportAcknowledgmentToolsView(View):
     def get(self, request, order_id):
@@ -273,13 +311,14 @@ class TransportAcknowledgmentToolsView(View):
     def post(self, request, order_id):
         transport_order = get_object_or_404(TransportOrder, pk=order_id)
 
-        # Get the tools to be acknowledged from the request
-        tool_ids = request.POST.getlist('tool_ids')
-
-        # Filter out any empty values from tool_ids
-        tool_ids = [tool_id for tool_id in tool_ids if tool_id]
-
         try:
+            # Parse JSON data from request.body
+            data = json.loads(request.body.decode('utf-8'))
+            tool_ids = data.get('tool_ids', [])
+
+            # Filter out any empty values from tool_ids
+            tool_ids = [tool_id for tool_id in tool_ids if tool_id]
+
             with transaction.atomic():
                 # Get the tools for this transport order
                 selected_tools = TransportTools.objects.filter(transport=transport_order, tool_id__in=tool_ids)
@@ -299,9 +338,10 @@ class TransportAcknowledgmentToolsView(View):
                 transport_order.save()
 
                 return JsonResponse({'success': True, 'message': 'Selected tools acknowledgment updated successfully.'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON data.'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
-
 
 def update_service_status():
     # Get all instrument models
