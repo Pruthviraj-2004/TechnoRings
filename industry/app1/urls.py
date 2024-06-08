@@ -56,8 +56,7 @@ urlpatterns = [
     path('instrument_family/<int:instrumentfamilyid>/delete/', DeleteInstrumentFamilyGroupView.as_view(), name='delete_instrument_family_group'),
     path('instrument/<int:instrument_no>/delete/', DeleteInstrumentModelView.as_view(), name='delete_instrument_model'),
 
-    # path('transport/<int:order_id>/acknowledge/', TransportAcknowledgmentView.as_view(), name='transport_acknowledge'),
-    path('transport/<int:order_id>/acknowledge/', TransportAcknowledgmentToolsView.as_view(), name='transport_acknowledge'),
+    path('transport/<int:order_id>/acknowledge/', TransportAcknowledgmentView.as_view(), name='transport_acknowledge'),
     path('transport_acknowledge_tools/<int:order_id>/', TransportAcknowledgmentToolsView.as_view(), name='transport_acknowledge_tools'),
     # path('update-service-status/', update_service_status, name='update_service_status'),
 
