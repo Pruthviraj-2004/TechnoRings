@@ -302,6 +302,45 @@ class TransportAcknowledgmentToolsView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+
+def update_service_status():
+    # Get all instrument models
+    instrument_models = InstrumentModel.objects.all()
+
+    # Iterate over each instrument model
+    for instrument in instrument_models:
+        # Get the latest calibration report for the instrument
+        latest_calibration_report = CalibrationReport.objects.filter(calibration_tool=instrument).order_by('calibration_date').first()
+
+        # Check if a calibration report exists and if the notification date matches the current date
+        if latest_calibration_report and latest_calibration_report.notification_date == timezone.now().date():
+            # Update the service status of the instrument
+            instrument.service_status = True
+            instrument.save()
+            
+            # Print the instrument tool that has been updated
+            print(f"Instrument tool '{instrument.instrument_name}' has been updated.")
+
+import schedule
+import time
+from django.utils import timezone
+import threading
+
+def start_scheduler():
+    # Schedule the job
+    schedule.every(10).minutes.do(update_service_status)
+    schedule.every().hour.do(update_service_status)
+    schedule.every().day.at("19:30").do(update_service_status)
+
+    # Continuous loop to run the scheduler
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+# Start the scheduler in a separate thread when Django starts
+scheduler_thread = threading.Thread(target=start_scheduler)
+scheduler_thread.start()
+
 # just creates new service orders
 # @method_decorator(csrf_exempt, name='dispatch')
 # class ServiceOrderView(View):
@@ -343,22 +382,22 @@ class TransportAcknowledgmentToolsView(View):
 #         # Handle invalid forms
 #         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
                
-def update_service_status(request):
-    # Get all instrument models
-    instrument_models = InstrumentModel.objects.all()
+# def update_service_status(request):
+#     # Get all instrument models
+#     instrument_models = InstrumentModel.objects.all()
 
-    # Iterate over each instrument model
-    for instrument in instrument_models:
-        # Get the latest calibration report for the instrument
-        latest_calibration_report = CalibrationReport.objects.filter(calibration_tool=instrument).order_by('calibration_date').first()
+#     # Iterate over each instrument model
+#     for instrument in instrument_models:
+#         # Get the latest calibration report for the instrument
+#         latest_calibration_report = CalibrationReport.objects.filter(calibration_tool=instrument).order_by('calibration_date').first()
 
-        # Check if a calibration report exists and if the notification date matches the current date
-        if latest_calibration_report and latest_calibration_report.notification_date == timezone.now().date():
-            # Update the service status of the instrument
-            instrument.service_status = True
-            instrument.save()
+#         # Check if a calibration report exists and if the notification date matches the current date
+#         if latest_calibration_report and latest_calibration_report.notification_date == timezone.now().date():
+#             # Update the service status of the instrument
+#             instrument.service_status = True
+#             instrument.save()
 
-    return JsonResponse({'success': True, 'message': 'Service status updated successfully'})
+#     return JsonResponse({'success': True, 'message': 'Service status updated successfully'})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ServiceOrderView(APIView):

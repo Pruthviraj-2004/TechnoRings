@@ -58,7 +58,7 @@ urlpatterns = [
 
     path('transport/<int:order_id>/acknowledge/', TransportAcknowledgmentView.as_view(), name='transport_acknowledge'),
     path('transport_acknowledge_tools/<int:order_id>/', TransportAcknowledgmentToolsView.as_view(), name='transport_acknowledge_tools'),
-    path('update-service-status/', update_service_status, name='update_service_status'),
+    # path('update-service-status/', update_service_status, name='update_service_status'),
 
     path('all_transport_orders/', AllTransportOrderView.as_view(), name='all-transport-orders'),
     path('recent_transport_orders/', RecentTransportOrderView.as_view(), name='recent-transport-orders'),
