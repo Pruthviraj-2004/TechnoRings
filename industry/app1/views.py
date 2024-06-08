@@ -328,13 +328,15 @@ import threading
 
 def start_scheduler():
     # Schedule the job
-    schedule.every(10).minutes.do(update_service_status)
+    schedule.every().minutes.do(update_service_status)
     schedule.every().hour.do(update_service_status)
-    schedule.every().day.at("19:30").do(update_service_status)
+    schedule.every().day.at("19:45").do(update_service_status)
 
-    # Continuous loop to run the scheduler
+    # Run pending jobs once and exit
     while True:
         schedule.run_pending()
+        if all(not job.should_run for job in schedule.jobs):
+            break
         time.sleep(1)
 
 # Start the scheduler in a separate thread when Django starts
