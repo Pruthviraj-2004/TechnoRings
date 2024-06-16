@@ -25,37 +25,26 @@ class Vendor(models.Model):
         return f"{self.name}"
 
 class InstrumentGroupMaster(models.Model):
-    tool_id = models.AutoField(primary_key=True)
+    tool_group_id = models.AutoField(primary_key=True)
     tool_group_name = models.CharField(max_length=32)
     tool_group_code = models.CharField(max_length=8)
-    instrument_type = models.CharField(max_length=32)
+
+    class Meta:
+        unique_together = ('tool_group_name', 'tool_group_code')
 
     def __str__(self):
         return f"{self.tool_group_name}"
 
 class InstrumentFamilyGroup(models.Model):
-    instrumentfamilyid = models.AutoField(primary_key=True)
+    instrument_family_id = models.AutoField(primary_key=True)
     instrument_family_name = models.CharField(max_length=32)
-    instrument_group_master = models.ForeignKey(InstrumentGroupMaster, on_delete=models.CASCADE)
+    instrument_group_master = models.ForeignKey(InstrumentGroupMaster, on_delete=models.PROTECT)
 
-    def __str__(self):
+    class Meta:
+        unique_together = ('instrument_family_name', 'instrument_group_master')
+
+    def __str(self):
         return f"{self.instrument_family_name}"
-
-class InstrumentModel(models.Model):
-    instrument_no = models.AutoField(primary_key=True)
-    instrument_name = models.CharField(max_length=32)
-    manufacturer_name = models.CharField(max_length=32, blank=True, null=True)
-    year_of_purchase = models.DateField()
-    gst = models.SmallIntegerField()
-    description = models.CharField(max_length=160, blank=True, null=True)
-    instrument_range = models.CharField(max_length=16, blank=True, null=True)
-    least_count = models.CharField(max_length=8, blank=True, null=True)
-    type_of_tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING)
-    calibration_frequency = models.IntegerField()
-    service_status = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.instrument_name} - ({self.type_of_tool})"
 
 class ShedDetails(models.Model):
     shed_id = models.AutoField(primary_key=True)
@@ -65,6 +54,26 @@ class ShedDetails(models.Model):
 
     def __str__(self):
         return f"{self.name}"
+    
+class InstrumentModel(models.Model):
+    instrument_no = models.AutoField(primary_key=True)
+    instrument_name = models.CharField(max_length=32)
+    manufacturer_name = models.CharField(max_length=32, blank=True, null=True, default=None)
+    year_of_purchase = models.DateField(blank=True, null=True)
+    gst = models.SmallIntegerField(default=18, blank=True, null=True)
+    description = models.CharField(max_length=160, blank=True, null=True, default=None)
+    instrument_range = models.CharField(max_length=16, blank=True, null=True, default=None)
+    least_count = models.CharField(max_length=8, blank=True, null=True, default=None)
+    type_of_tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING)
+    calibration_frequency = models.IntegerField(default=365, blank=True, null=True)
+    service_status = models.BooleanField(default=False)
+    current_shed = models.ForeignKey(ShedDetails, on_delete=models.CASCADE, default=6, blank=True, null=True)
+
+    class Meta:
+        unique_together = ('instrument_name',)
+
+    def __str__(self):
+        return f"{self.instrument_name} - ({self.type_of_tool})"
 
 class ShedTools(models.Model):
     shedtool_id = models.AutoField(primary_key=True)
@@ -94,7 +103,7 @@ class TransportTools(models.Model):
     transporttool_id = models.AutoField(primary_key=True)
     transport = models.ForeignKey(TransportOrder, on_delete=models.CASCADE)
     tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
-    tool_movement_remarks = models.TextField(default="good", blank=True, null=True)
+    tool_movement_remarks = models.TextField(default="Transport Tool", blank=True, null=True)
     acknowledgment = models.BooleanField(default=False)
 
     class Meta:
@@ -114,9 +123,10 @@ class ServiceOrder(models.Model):
     service_id = models.AutoField(primary_key=True)
     date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)  
-    description = models.CharField(max_length=100)
+    description = models.TextField(default="Service", blank=True, null=True)
     tool_count = models.IntegerField()
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    service_pending = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
         
@@ -129,7 +139,8 @@ class ServiceTools(models.Model):
     tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     service_type = models.ForeignKey(ServiceType, on_delete=models.SET_DEFAULT, default=1)
-    service_remarks = models.TextField(default="good", blank=True, null=True)
+    service_remarks = models.TextField(default="Service Tool", blank=True, null=True)
+    service_pending_tool = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Service ID: {self.service.service_id} - Tool: {self.tool.instrument_name} - Service Vendor: {self.vendor.name}"
@@ -170,12 +181,12 @@ class CalibrationReport(models.Model):
     calibration_tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
     calibration_date = models.DateField()
     calibration_report_no = models.CharField(max_length=32)
-    calibration_agency = models.CharField(max_length=32)
-    result = models.FloatField()
-    action = models.CharField(max_length=16)
+    calibration_agency = models.CharField(max_length=32, blank=True, null=True, default=None)
+    result = models.CharField(max_length=16, blank=True, null=True, default=None)
+    action = models.CharField(max_length=16, blank=True, null=True, default=None)
     next_calibration_date = models.DateField()
     notification_date = models.DateField()
-    remark = models.TextField()
+    remark = models.TextField(default="Calibration", blank=True, null=True)
     calibration_report_file = models.FileField(upload_to='calibration_reports/', default=default_report_file, max_length=250 ,null=True)
     calibration_report_file2 = models.FileField(upload_to='calibration_reports2/', default=default_report_file, max_length=250 ,null=True)
 

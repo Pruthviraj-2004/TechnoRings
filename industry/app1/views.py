@@ -14,7 +14,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.parsers import MultiPartParser, FormParser
-
+from django.utils.dateparse import parse_datetime
+from datetime import timedelta
 
 class VendorTypeView(APIView):
     def get(self, request):
@@ -237,6 +238,33 @@ class TransportOrderView(APIView):
         else:
             return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class TransportAcknowledgmentView(View):
+#     def get(self, request, order_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=order_id)
+#         return render(request, 'app1/transport_acknowledge.html', {'transport_order': transport_order})
+
+#     def post(self, request, order_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=order_id)
+#         transport_order.acknowledgment = True
+#         transport_order.save()
+
+#         # Get the selected tools for this transport order
+#         selected_tools = TransportTools.objects.filter(transport=transport_order)
+
+#         # Update ShedTools from source shed to destination shed for selected tools only
+#         source_shed = transport_order.source_shed
+#         destination_shed = transport_order.destination_shed
+#         transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
+
+#         try:
+#             with transaction.atomic():
+#                 selected_tools.update(acknowledgment=True)
+#                 transported_tools.update(shed=destination_shed)
+#                 return JsonResponse({'success': True, 'message': 'Transport acknowledgment successful.'})
+#         except Exception as e:
+#             return JsonResponse({'success': False, 'error': str(e)})
+
 @method_decorator(csrf_exempt, name='dispatch')
 class TransportAcknowledgmentView(View):
     def get(self, request, order_id):
@@ -246,24 +274,31 @@ class TransportAcknowledgmentView(View):
     def post(self, request, order_id):
         transport_order = get_object_or_404(TransportOrder, pk=order_id)
         transport_order.acknowledgment = True
-        transport_order.save()
-
-        # Get the selected tools for this transport order
-        selected_tools = TransportTools.objects.filter(transport=transport_order)
-
-        # Update ShedTools from source shed to destination shed for selected tools only
-        source_shed = transport_order.source_shed
-        destination_shed = transport_order.destination_shed
-        transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
 
         try:
             with transaction.atomic():
-                selected_tools.update(acknowledgment=True)
+                # Update acknowledgment status for the transport order
+                transport_order.save()
+
+                # Get the selected tools for this transport order
+                selected_tools = TransportTools.objects.filter(transport=transport_order)
+
+                # Update ShedTools from source shed to destination shed for selected tools only
+                source_shed = transport_order.source_shed
+                destination_shed = transport_order.destination_shed
+                transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
                 transported_tools.update(shed=destination_shed)
+
+                selected_tools.update(acknowledgment=True)
+
+                # Update current_shed field of InstrumentModel for acknowledged tools
+                acknowledged_instruments = selected_tools.values_list('tool', flat=True)
+                InstrumentModel.objects.filter(instrument_no__in=acknowledged_instruments).update(current_shed=destination_shed)
+
                 return JsonResponse({'success': True, 'message': 'Transport acknowledgment successful.'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
-    
+
 # @method_decorator(csrf_exempt, name='dispatch')
 # class TransportAcknowledgmentToolsView(View):
 #     def get(self, request, order_id):
@@ -302,6 +337,47 @@ class TransportAcknowledgmentView(View):
 #         except Exception as e:
 #             return JsonResponse({'success': False, 'error': str(e)})
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class TransportAcknowledgmentToolsView(View):
+#     def get(self, request, order_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=order_id)
+#         return render(request, 'app1/transport_acknowledge_tools.html', {'transport_order': transport_order})
+
+#     def post(self, request, order_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=order_id)
+
+#         try:
+#             # Parse JSON data from request.body
+#             data = json.loads(request.body.decode('utf-8'))
+#             tool_ids = data.get('tool_ids', [])
+
+#             # Filter out any empty values from tool_ids
+#             tool_ids = [tool_id for tool_id in tool_ids if tool_id]
+
+#             with transaction.atomic():
+#                 # Get the tools for this transport order
+#                 selected_tools = TransportTools.objects.filter(transport=transport_order, tool_id__in=tool_ids)
+
+#                 # Update the selected tools acknowledgment to True
+#                 selected_tools.update(acknowledgment=True)
+
+#                 # Update ShedTools from source shed to destination shed for selected tools
+#                 source_shed = transport_order.source_shed
+#                 destination_shed = transport_order.destination_shed
+#                 transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
+#                 transported_tools.update(shed=destination_shed)
+
+#                 # Check if all tools for the transport order are acknowledged
+#                 all_tools_acknowledged = not TransportTools.objects.filter(transport=transport_order, acknowledgment=False).exists()
+#                 transport_order.acknowledgment = all_tools_acknowledged
+#                 transport_order.save()
+
+#                 return JsonResponse({'success': True, 'message': 'Selected tools acknowledgment updated successfully.'})
+#         except json.JSONDecodeError:
+#             return JsonResponse({'success': False, 'error': 'Invalid JSON data.'})
+#         except Exception as e:
+#             return JsonResponse({'success': False, 'error': str(e)})
+
 @method_decorator(csrf_exempt, name='dispatch')
 class TransportAcknowledgmentToolsView(View):
     def get(self, request, order_id):
@@ -331,6 +407,10 @@ class TransportAcknowledgmentToolsView(View):
                 destination_shed = transport_order.destination_shed
                 transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
                 transported_tools.update(shed=destination_shed)
+
+                # Update current_shed field of InstrumentModel for acknowledged tools
+                acknowledged_instruments = selected_tools.values_list('tool', flat=True)
+                InstrumentModel.objects.filter(instrument_no__in=acknowledged_instruments).update(current_shed=destination_shed)
 
                 # Check if all tools for the transport order are acknowledged
                 all_tools_acknowledged = not TransportTools.objects.filter(transport=transport_order, acknowledgment=False).exists()
@@ -465,30 +545,6 @@ class ServiceOrderView(APIView):
 
         return Response(response_data)
     
-    def post(self, request):
-        order_serializer = ServiceOrderSerializer(data=request.data)
-        
-        if order_serializer.is_valid():
-            service_order = order_serializer.save()
-
-            tools_data = request.data.get('tools', [])
-            for tool_data in tools_data:
-                tool_id = tool_data.get('tool')
-                vendor_id = tool_data.get('vendor')
-                service_type_id = tool_data.get('service_type')
-                tool = get_object_or_404(InstrumentModel, pk=tool_id)
-                vendor = get_object_or_404(Vendor, pk=vendor_id)
-                service_type = get_object_or_404(ServiceType, pk=service_type_id)
-                service_remarks = tool_data.get('service_remarks', 'good')
-
-                ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
-
-            # Return success response with service order ID
-            return Response({'success': True, 'serviceorder_id': service_order.service_id}, status=status.HTTP_201_CREATED)
-        else:
-            # Return error response if service order data is not valid
-            return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     # def post(self, request):
     #     order_serializer = ServiceOrderSerializer(data=request.data)
         
@@ -496,8 +552,6 @@ class ServiceOrderView(APIView):
     #         service_order = order_serializer.save()
 
     #         tools_data = request.data.get('tools', [])
-    #         total_amount = 0
-
     #         for tool_data in tools_data:
     #             tool_id = tool_data.get('tool')
     #             vendor_id = tool_data.get('vendor')
@@ -507,23 +561,49 @@ class ServiceOrderView(APIView):
     #             service_type = get_object_or_404(ServiceType, pk=service_type_id)
     #             service_remarks = tool_data.get('service_remarks', 'good')
 
-    #             service_tool = ServiceTools.objects.create(service=service_order,tool=tool,vendor=vendor,service_type=service_type,service_remarks=service_remarks)
+    #             ServiceTools.objects.create(service=service_order, tool=tool, vendor=vendor, service_type=service_type, service_remarks=service_remarks)
 
-    #             # Calculate the cost if the service type is 'calibration'
-    #             if service_tool.service_type.service_type.lower() == 'calibration':
-    #                 vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
-    #                 for vendor_handle in vendor_handles:
-    #                     total_amount += vendor_handle.cost
-
-    #         # Update the service order amount with the calculated total amount
-    #         service_order.amount = total_amount
-    #         service_order.save()
-
-    #         # Return success response with service order ID and total amount
-    #         return Response({'success': True, 'serviceorder_id': service_order.service_id, 'total_amount': total_amount}, status=status.HTTP_201_CREATED)
+    #         # Return success response with service order ID
+    #         return Response({'success': True, 'serviceorder_id': service_order.service_id}, status=status.HTTP_201_CREATED)
     #     else:
     #         # Return error response if service order data is not valid
     #         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request):
+        order_serializer = ServiceOrderSerializer(data=request.data)
+        
+        if order_serializer.is_valid():
+            service_order = order_serializer.save()
+
+            tools_data = request.data.get('tools', [])
+            total_amount = 0
+
+            for tool_data in tools_data:
+                tool_id = tool_data.get('tool')
+                vendor_id = tool_data.get('vendor')
+                service_type_id = tool_data.get('service_type')
+                tool = get_object_or_404(InstrumentModel, pk=tool_id)
+                vendor = get_object_or_404(Vendor, pk=vendor_id)
+                service_type = get_object_or_404(ServiceType, pk=service_type_id)
+                service_remarks = tool_data.get('service_remarks', 'good')
+
+                service_tool = ServiceTools.objects.create(service=service_order,tool=tool,vendor=vendor,service_type=service_type,service_remarks=service_remarks)
+
+                # Calculate the cost if the service type is 'calibration'
+                if service_tool.service_type.service_type.lower() == 'calibration':
+                    vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+                    for vendor_handle in vendor_handles:
+                        total_amount += vendor_handle.cost
+
+            # Update the service order amount with the calculated total amount
+            service_order.amount = total_amount
+            service_order.save()
+
+            # Return success response with service order ID and total amount
+            return Response({'success': True, 'serviceorder_id': service_order.service_id, 'total_amount': total_amount}, status=status.HTTP_201_CREATED)
+        else:
+            # Return error response if service order data is not valid
+            return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class GenerateBillView(View):
 #     def get(self, request, service_order_id):
@@ -582,6 +662,79 @@ class GenerateBillView(View):
         data = {'bill_items': bill_items,'total_amount': total_amount}
         return JsonResponse(data)
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class StoreDeliveryChallan(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
+    
+#     def post(self, request):
+#         data = request.data
+
+#         # Create DeliveryChallan instance
+#         delivery_challan_form = DeliveryChallanForm(data)
+#         if delivery_challan_form.is_valid():
+#             delivery_challan = delivery_challan_form.save()
+
+#             # Process each tool's data
+#             tool_data_list = []
+#             index = 0
+#             while True:
+#                 tool_data = {
+#                     'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
+#                     'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
+#                     'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
+#                     'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
+#                     'result': data.get(f'toolData[{index}][result]'),
+#                     'action': data.get(f'toolData[{index}][action]'),
+#                     'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
+#                     'remark': data.get(f'toolData[{index}][remark]'),
+#                     'notification_date': data.get(f'toolData[{index}][notification_date]'),
+#                     'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
+#                     'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
+#                 }
+#                 if not tool_data['calibration_tool']:
+#                     break
+#                 tool_data_list.append(tool_data)
+#                 index += 1
+
+#             # Collect errors for each tool's calibration report form
+#             errors = []
+#             for tool_info in tool_data_list:
+#                 calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
+#                 if calibration_report_form.is_valid():
+#                     calibration_report = calibration_report_form.save(commit=False)
+#                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
+                    
+#                     # Handle first file
+#                     if tool_info['calibration_report_file']:
+#                         calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
+
+#                     # Handle second file
+#                     if tool_info['calibration_report_file2']:
+#                         calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
+
+#                     calibration_report.save()
+
+#                     # Create DeliveryChallanTools instance
+#                     delivery_challan_tool = DeliveryChallanTools(
+#                         deliverychallan=delivery_challan,
+#                         tool_id=tool_info['calibration_tool'],
+#                         calibration_report=calibration_report
+#                     )
+#                     delivery_challan_tool.save()
+#                 else:
+#                     errors.append({
+#                         'tool': tool_info['calibration_tool'],
+#                         'errors': calibration_report_form.errors
+#                     })
+
+#             if errors:
+#                 return JsonResponse({'success': False, 'errors': errors}, status=400)
+#             else:
+#                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+
+from datetime import timedelta
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -632,6 +785,24 @@ class StoreDeliveryChallan(APIView):
                     if tool_info['calibration_report_file2']:
                         calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
 
+                    # Calculate next calibration date and notification date
+                    calibration_frequency = calibration_report.calibration_tool.calibration_frequency
+                    calibration_date = calibration_report.calibration_date
+                    next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
+                    calibration_report.next_calibration_date = next_calibration_date
+
+                    try:
+                        vendor_handle = VendorHandles.objects.get(tool=calibration_report.calibration_tool)
+                        turnaround_time = vendor_handle.turnaround_time
+                        notification_date = next_calibration_date - timedelta(days=turnaround_time)
+                        calibration_report.notification_date = notification_date
+                    except VendorHandles.DoesNotExist:
+                        errors.append({
+                            'tool': tool_info['calibration_tool'],
+                            'errors': 'Vendor handle not found for the selected tool.'
+                        })
+                        continue
+
                     calibration_report.save()
 
                     # Create DeliveryChallanTools instance
@@ -655,14 +826,120 @@ class StoreDeliveryChallan(APIView):
             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
 
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class StoreDeliveryChallan(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
     
+#     def post(self, request):
+#         data = request.data
+
+#         # Retrieve the service order to get the vendor
+#         service_id = data.get('service')
+#         if not service_id:
+#             return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
+
+#         try:
+#             service_order = ServiceOrder.objects.get(pk=service_id)
+#         except ServiceOrder.DoesNotExist:
+#             return JsonResponse({'success': False, 'errors': 'Invalid Service ID'}, status=400)
+
+#         vendor = service_order.vendor
+
+#         # Add the vendor to the data
+#         data = data.copy()  # Make a mutable copy of the data
+#         data['vendor'] = vendor.vendor_id
+
+#         # Create DeliveryChallan instance
+#         delivery_challan_form = DeliveryChallanForm(data)
+#         if delivery_challan_form.is_valid():
+#             delivery_challan = delivery_challan_form.save()
+
+#             # Process each tool's data
+#             tool_data_list = []
+#             index = 0
+#             while True:
+#                 tool_data = {
+#                     'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
+#                     'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
+#                     'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
+#                     'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
+#                     'result': data.get(f'toolData[{index}][result]'),
+#                     'action': data.get(f'toolData[{index}][action]'),
+#                     'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
+#                     'remark': data.get(f'toolData[{index}][remark]'),
+#                     'notification_date': data.get(f'toolData[{index}][notification_date]'),
+#                     'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
+#                     'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
+#                 }
+#                 if not tool_data['calibration_tool']:
+#                     break
+#                 tool_data_list.append(tool_data)
+#                 index += 1
+
+#             # Collect errors for each tool's calibration report form
+#             errors = []
+#             for tool_info in tool_data_list:
+#                 calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
+#                 if calibration_report_form.is_valid():
+#                     calibration_report = calibration_report_form.save(commit=False)
+#                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
+                    
+#                     # Handle first file
+#                     if tool_info['calibration_report_file']:
+#                         calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
+
+#                     # Handle second file
+#                     if tool_info['calibration_report_file2']:
+#                         calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
+
+#                     # Calculate next calibration date and notification date
+#                     calibration_frequency = calibration_report.calibration_tool.calibration_frequency
+#                     calibration_date = calibration_report.calibration_date
+#                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
+#                     calibration_report.next_calibration_date = next_calibration_date
+
+#                     try:
+#                         vendor_handle = VendorHandles.objects.get(tool=calibration_report.calibration_tool)
+#                         turnaround_time = vendor_handle.turnaround_time
+#                         notification_date = next_calibration_date - timedelta(days=turnaround_time)
+#                         calibration_report.notification_date = notification_date
+#                     except VendorHandles.DoesNotExist:
+#                         errors.append({
+#                             'tool': tool_info['calibration_tool'],
+#                             'errors': 'Vendor handle not found for the selected tool.'
+#                         })
+#                         continue
+
+#                     calibration_report.save()
+
+#                     # Create DeliveryChallanTools instance
+#                     delivery_challan_tool = DeliveryChallanTools(
+#                         deliverychallan=delivery_challan,
+#                         tool_id=tool_info['calibration_tool'],
+#                         calibration_report=calibration_report
+#                     )
+#                     delivery_challan_tool.save()
+#                 else:
+#                     errors.append({
+#                         'tool': tool_info['calibration_tool'],
+#                         'errors': calibration_report_form.errors
+#                     })
+
+#             if errors:
+#                 return JsonResponse({'success': False, 'errors': errors}, status=400)
+#             else:
+#                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+
+
 # class InstrumentTransportHistoryView(View):
 #     def get(self, request, instrument_id):
 #         instrument = InstrumentModel.objects.get(pk=instrument_id)
 #         transport_history = TransportTools.objects.filter(tool=instrument)
     
 #         return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})
-
+    
 class InstrumentTransportHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
@@ -681,7 +958,7 @@ class InstrumentTransportHistoryView(APIView):
             'transport_history': serialized_transport_history,
             'transport_orders': serialized_transport_orders
         })
-
+    
 # class InstrumentServiceHistoryView(View):
 #     def get(self, request, instrument_id):
 #         instrument = InstrumentModel.objects.get(pk=instrument_id)
@@ -707,7 +984,20 @@ class InstrumentServiceHistoryView(APIView):
             serialized_service_history.append(service_order_data)
         
         return Response({'instrument': InstrumentModelSerializer(instrument).data, 'service_history': serialized_service_history})    
-    
+
+class InstrumentCalibrationHistoryView(APIView):
+    def get(self, request, instrument_id):
+        # Retrieve the instrument
+        instrument = get_object_or_404(InstrumentModel, pk=instrument_id)
+        
+        # Get the calibration history for the instrument
+        calibration_history = CalibrationReport.objects.filter(calibration_tool=instrument)
+        
+        # Serialize the calibration history
+        serialized_calibration_history = CalibrationReportSerializer(calibration_history, many=True).data
+        
+        return Response({'instrument': InstrumentModelSerializer(instrument).data,'calibration_history': serialized_calibration_history})
+
 @method_decorator(csrf_exempt, name='dispatch')
 class AddInstrumentModelView1(View):
     def get(self, request):
@@ -782,13 +1072,11 @@ class AddInstrumentGroupMasterView(View):
         # Extract instrument group master details from the parsed data
         tool_group_name = body_data.get('toolGroupName')
         tool_group_code = body_data.get('toolGroupCode')
-        instrument_type = body_data.get('instrumentType')
 
         # Create a dictionary with the extracted data
         instrument_group_master_data = {
             'tool_group_name': tool_group_name,
             'tool_group_code': tool_group_code,
-            'instrument_type': instrument_type
         }
 
         # Create an InstrumentGroupMasterForm instance with the extracted data
@@ -834,7 +1122,7 @@ class AddInstrumentFamilyView(View):
         # Create a dictionary with the extracted data
         instrument_family_data = {
             'instrument_family_name': instrument_family_name,
-            'instrument_group_master': instrument_group_master.tool_id
+            'instrument_group_master': instrument_group_master.tool_group_id
         }
 
         # Create an InstrumentFamilyGroupForm instance with the extracted data
@@ -1171,12 +1459,12 @@ class DeleteVendorHandlesView(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class DeleteInstrumentGroupMasterView(View):
-    def get(self, request, tool_id):
-        instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
+    def get(self, request, tool_group_id):
+        instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
         return render(request, 'app1/delete_instrument_group.html', {'instrument_group': instrument_group})
 
-    def post(self, request, tool_id):
-        instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
+    def post(self, request, tool_group_id):
+        instrument_group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
         try:
             instrument_group.delete()
             return JsonResponse({'success': True, 'message': 'Instrument group deleted successfully'})
@@ -1185,12 +1473,12 @@ class DeleteInstrumentGroupMasterView(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class DeleteInstrumentFamilyGroupView(View):
-    def get(self, request, instrumentfamilyid):
-        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
+    def get(self, request, instrument_family_id):
+        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrument_family_id)
         return render(request, 'app1/delete_instrument_family_group.html', {'instrument_family': instrument_family})
 
-    def post(self, request, instrumentfamilyid):
-        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrumentfamilyid)
+    def post(self, request, instrument_family_id):
+        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrument_family_id)
         try:
             instrument_family.delete()
             return JsonResponse({'success': True, 'message': 'Instrument family group deleted successfully'})
@@ -1221,14 +1509,69 @@ class CountOfObjects(View):
         deliverychallan_count = DeliveryChallan.objects.count()
 
         # return render(request, 'app1/count_list.html', {'vendor_count':vendor_count,'shed_count':shed_count,'instruments_count':instruments_count})
-        data = {
-            'vendor_count': vendor_count,
-            'shed_count': shed_count,
-            'instruments_count': instruments_count,
-            'transport_order_count': transport_order_count,
-            'service_order_count': service_order_count,
-            'deliverychallan_count': deliverychallan_count
-        }
+        data = {'vendor_count': vendor_count,'shed_count': shed_count,'instruments_count': instruments_count,'transport_order_count': transport_order_count,'service_order_count': service_order_count,'deliverychallan_count': deliverychallan_count}
         
         return JsonResponse(data)
 
+class UpdateInstrumentShedView(View):
+    def get(self, request, *args, **kwargs):
+        instruments = InstrumentModel.objects.all()
+        sheds = ShedDetails.objects.all()
+
+        updated_count = 0
+
+        for instrument in instruments:
+            # Find all sheds where this instrument is present
+            found_shed = None
+            for shed in sheds:
+                if self.instrument_in_shed(instrument, shed):
+                    found_shed = shed
+                    break
+            
+            # Update current_shed field for the instrument
+            if found_shed:
+                instrument.current_shed = found_shed
+                instrument.save()
+                updated_count += 1
+            else:
+                # If not found in any shed, set current_shed to None
+                instrument.current_shed = None
+                instrument.save()
+
+        return JsonResponse({'message': f'Successfully updated {updated_count} instruments.'})
+
+    def instrument_in_shed(self, instrument, shed):
+        try:
+            ShedTools.objects.get(shed=shed, using_tool=instrument)
+            return True
+        except ShedTools.DoesNotExist:
+            return False
+          
+class InstrumentsByGroupView(APIView):
+    def get(self, request, tool_group_id):
+        # Retrieve the tool group
+        tool_group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
+        
+        # Get the instruments for the specified tool group
+        instruments = InstrumentModel.objects.filter(type_of_tool=tool_group)
+        
+        # Serialize the instruments
+        serialized_instruments = InstrumentModelSerializer(instruments, many=True).data
+        
+        return Response({'tool_group': tool_group.tool_group_name,'instruments': serialized_instruments})
+
+class PendingServiceOrdersByVendorView(APIView):
+    def get(self, request, vendor_id):
+        # Retrieve the vendor
+        vendor = get_object_or_404(Vendor, pk=vendor_id)
+        
+        # Get the pending service orders for the specified vendor
+        pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
+        
+        # Serialize the pending service orders
+        serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
+        
+        return Response({
+            'vendor': vendor.name,
+            'pending_service_orders': serialized_service_orders
+        })

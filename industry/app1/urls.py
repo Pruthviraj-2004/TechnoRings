@@ -70,4 +70,11 @@ urlpatterns = [
     path('count_of/', CountOfObjects.as_view(), name='count_of'),
 
     path ('calibration_reports/', CalibrationReportView.as_view(), name="all-calibration-reports"),
+
+    path('update_instrument_shed/', UpdateInstrumentShedView.as_view(), name='update_instrument_shed'),
+
+    path('instrument-calibration-history/<int:instrument_id>/', InstrumentCalibrationHistoryView.as_view(), name='instrument-calibration-history'),
+    path('instruments_by_tool_group/<int:tool_group_id>/', InstrumentsByGroupView.as_view(), name='instruments-by-group'),
+    path('pending-service-orders/vendor/<int:vendor_id>/', PendingServiceOrdersByVendorView.as_view(), name='pending-service-orders-by-vendor'),
+
 ]
