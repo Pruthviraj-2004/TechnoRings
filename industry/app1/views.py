@@ -734,120 +734,13 @@ class GenerateBillView(View):
 #         else:
 #             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
 
-from datetime import timedelta
-@method_decorator(csrf_exempt, name='dispatch')
-class StoreDeliveryChallan(APIView):
-    parser_classes = (MultiPartParser, FormParser)
-    
-    def post(self, request):
-        data = request.data
-
-        # Create DeliveryChallan instance
-        delivery_challan_form = DeliveryChallanForm(data)
-        if delivery_challan_form.is_valid():
-            delivery_challan = delivery_challan_form.save()
-
-            # Process each tool's data
-            tool_data_list = []
-            index = 0
-            while True:
-                tool_data = {
-                    'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
-                    'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
-                    'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
-                    'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
-                    'result': data.get(f'toolData[{index}][result]'),
-                    'action': data.get(f'toolData[{index}][action]'),
-                    'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
-                    'remark': data.get(f'toolData[{index}][remark]'),
-                    'notification_date': data.get(f'toolData[{index}][notification_date]'),
-                    'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
-                    'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
-                }
-                if not tool_data['calibration_tool']:
-                    break
-                tool_data_list.append(tool_data)
-                index += 1
-
-            # Collect errors for each tool's calibration report form
-            errors = []
-            for tool_info in tool_data_list:
-                calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
-                if calibration_report_form.is_valid():
-                    calibration_report = calibration_report_form.save(commit=False)
-                    calibration_report.calibration_tool_id = tool_info['calibration_tool']
-                    
-                    # Handle first file
-                    if tool_info['calibration_report_file']:
-                        calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
-
-                    # Handle second file
-                    if tool_info['calibration_report_file2']:
-                        calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
-
-                    # Calculate next calibration date and notification date
-                    calibration_frequency = calibration_report.calibration_tool.calibration_frequency
-                    calibration_date = calibration_report.calibration_date
-                    next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
-                    calibration_report.next_calibration_date = next_calibration_date
-
-                    try:
-                        vendor_handle = VendorHandles.objects.get(tool=calibration_report.calibration_tool)
-                        turnaround_time = vendor_handle.turnaround_time
-                        notification_date = next_calibration_date - timedelta(days=turnaround_time)
-                        calibration_report.notification_date = notification_date
-                    except VendorHandles.DoesNotExist:
-                        errors.append({
-                            'tool': tool_info['calibration_tool'],
-                            'errors': 'Vendor handle not found for the selected tool.'
-                        })
-                        continue
-
-                    calibration_report.save()
-
-                    # Create DeliveryChallanTools instance
-                    delivery_challan_tool = DeliveryChallanTools(
-                        deliverychallan=delivery_challan,
-                        tool_id=tool_info['calibration_tool'],
-                        calibration_report=calibration_report
-                    )
-                    delivery_challan_tool.save()
-                else:
-                    errors.append({
-                        'tool': tool_info['calibration_tool'],
-                        'errors': calibration_report_form.errors
-                    })
-
-            if errors:
-                return JsonResponse({'success': False, 'errors': errors}, status=400)
-            else:
-                return JsonResponse({'success': True, 'message': 'Data saved successfully'})
-        else:
-            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
-
-
+# from datetime import timedelta
 # @method_decorator(csrf_exempt, name='dispatch')
 # class StoreDeliveryChallan(APIView):
 #     parser_classes = (MultiPartParser, FormParser)
     
 #     def post(self, request):
 #         data = request.data
-
-#         # Retrieve the service order to get the vendor
-#         service_id = data.get('service')
-#         if not service_id:
-#             return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
-
-#         try:
-#             service_order = ServiceOrder.objects.get(pk=service_id)
-#         except ServiceOrder.DoesNotExist:
-#             return JsonResponse({'success': False, 'errors': 'Invalid Service ID'}, status=400)
-
-#         vendor = service_order.vendor
-
-#         # Add the vendor to the data
-#         data = data.copy()  # Make a mutable copy of the data
-#         data['vendor'] = vendor.vendor_id
 
 #         # Create DeliveryChallan instance
 #         delivery_challan_form = DeliveryChallanForm(data)
@@ -895,7 +788,7 @@ class StoreDeliveryChallan(APIView):
 #                     # Calculate next calibration date and notification date
 #                     calibration_frequency = calibration_report.calibration_tool.calibration_frequency
 #                     calibration_date = calibration_report.calibration_date
-#                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
+#                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
 #                     calibration_report.next_calibration_date = next_calibration_date
 
 #                     try:
@@ -931,6 +824,117 @@ class StoreDeliveryChallan(APIView):
 #                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
 #         else:
 #             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StoreDeliveryChallan(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    
+    def post(self, request):
+        data = request.data
+
+        # Retrieve the service order to get the vendor
+        service_id = data.get('service')
+        if not service_id:
+            return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
+
+        try:
+            service_order = ServiceOrder.objects.get(pk=service_id)
+        except ServiceOrder.DoesNotExist:
+            return JsonResponse({'success': False, 'errors': 'Invalid Service ID'}, status=400)
+
+        vendor = service_order.vendor
+
+        # Add the vendor to the data
+        data = data.copy()  # Make a mutable copy of the data
+        data['vendor'] = vendor.vendor_id
+
+        # Create DeliveryChallan instance
+        delivery_challan_form = DeliveryChallanForm(data)
+        if delivery_challan_form.is_valid():
+            delivery_challan = delivery_challan_form.save()
+
+            # Process each tool's data
+            tool_data_list = []
+            index = 0
+            while True:
+                tool_data = {
+                    'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
+                    'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
+                    'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
+                    'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
+                    'result': data.get(f'toolData[{index}][result]'),
+                    'action': data.get(f'toolData[{index}][action]'),
+                    # 'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
+                    'remark': data.get(f'toolData[{index}][remark]'),
+                    # 'notification_date': data.get(f'toolData[{index}][notification_date]'),
+                    'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
+                    'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
+                }
+                if not tool_data['calibration_tool']:
+                    break
+                tool_data_list.append(tool_data)
+                index += 1
+
+            # Collect errors for each tool's calibration report form
+            errors = []
+            for tool_info in tool_data_list:
+                calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
+                if calibration_report_form.is_valid():
+                    calibration_report = calibration_report_form.save(commit=False)
+                    calibration_report.calibration_tool_id = tool_info['calibration_tool']
+                    
+                    # Handle first file
+                    if tool_info['calibration_report_file']:
+                        calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
+
+                    # Handle second file
+                    if tool_info['calibration_report_file2']:
+                        calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
+
+                    # Calculate next calibration date and notification date
+                    calibration_frequency = calibration_report.calibration_tool.calibration_frequency
+                    calibration_date = calibration_report.calibration_date
+                    next_calibration_date = calibration_date + timedelta(days=calibration_frequency * 365)
+                    calibration_report.next_calibration_date = next_calibration_date
+
+                    try:
+                        # Filter by tool and vendor
+                        vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool, vendor=vendor).first()
+                        if not vendor_handle:
+                            raise VendorHandles.DoesNotExist
+
+                        turnaround_time = vendor_handle.turnaround_time
+                        notification_date = next_calibration_date - timedelta(days=turnaround_time)
+                        calibration_report.notification_date = notification_date
+                    except VendorHandles.DoesNotExist:
+                        errors.append({
+                            'tool': tool_info['calibration_tool'],
+                            'errors': 'Vendor handle not found for the selected tool.'
+                        })
+                        continue
+
+                    calibration_report.save()
+
+                    # Create DeliveryChallanTools instance
+                    delivery_challan_tool = DeliveryChallanTools(
+                        deliverychallan=delivery_challan,
+                        tool_id=tool_info['calibration_tool'],
+                        calibration_report=calibration_report
+                    )
+                    delivery_challan_tool.save()
+                else:
+                    errors.append({
+                        'tool': tool_info['calibration_tool'],
+                        'errors': calibration_report_form.errors
+                    })
+
+            if errors:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            else:
+                return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+        else:
+            return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
 
 
 # class InstrumentTransportHistoryView(View):

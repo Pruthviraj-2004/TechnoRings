@@ -83,7 +83,8 @@ class DeliveryChallanToolsForm(forms.ModelForm):
 class CalibrationReportForm(forms.ModelForm):
     class Meta:
         model = CalibrationReport
-        fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_report_file', 'calibration_report_file2','notification_date']
+        # fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'next_calibration_date', 'remark', 'calibration_report_file', 'calibration_report_file2','notification_date']
+        fields = ['calibration_tool', 'calibration_date', 'calibration_report_no', 'calibration_agency', 'result', 'action', 'remark', 'calibration_report_file', 'calibration_report_file2']
 
     def _init_(self, *args, **kwargs):
         files = kwargs.pop('files', None)
