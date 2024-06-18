@@ -1,7 +1,6 @@
 from django import views
 from django.urls import path
 from .views import *
-
 from . import views
 
 urlpatterns = [
@@ -28,10 +27,12 @@ urlpatterns = [
 
     path('instrument-transport-history/<int:instrument_id>/', InstrumentTransportHistoryView.as_view(), name='instrument_transport_history'),
     path('instrument-service-history/<int:instrument_id>/', InstrumentServiceHistoryView.as_view(), name='instrument_service_history'),
+    path('instrument-calibration-history/<int:instrument_id>/', InstrumentCalibrationHistoryView.as_view(), name='instrument-calibration-history'),
 
     path('transport_orders/<int:movement_id>/', TransportOrderViews.as_view(), name='transport_order_detail'),
     path('service_orders/<int:service_id>/', ServiceOrderViews.as_view(), name='service_order_detail'),
     path('delivery-challans/<int:deliverychallan_id>/', DeliveryChallanViews.as_view(), name='delivery-challan-detail'),
+    path('calibration_reports/', CalibrationReportView.as_view(), name="all-calibration-reports"),
 
     path('add_instrument1/', AddInstrumentModelView1.as_view(), name='add_instrument1'),
     path('add_instrument_group_master/', AddInstrumentGroupMasterView.as_view(), name='add_instrument_group_master'),
@@ -40,6 +41,9 @@ urlpatterns = [
     path('add_shed_tools/', AddShedToolsView.as_view(), name='add_shed_tools'),
     path('add_vendor/', AddVendorView.as_view(), name='add_vendor'),
     path('add_vendor_handles/', AddVendorHandlesView.as_view(), name='add_vendor_handles'),
+
+    path('update_shed/<int:shed_id>/', UpdateShedDetailsView.as_view(), name='update_shed'),
+
 
     path('vendor/<int:vendor_id>/delete/', VendorDeleteView.as_view(), name='vendor_delete'),
     path('shed/<int:shed_id>/delete/', ShedDeleteView.as_view(), name='delete_shed'),
@@ -69,11 +73,8 @@ urlpatterns = [
     
     path('count_of/', CountOfObjects.as_view(), name='count_of'),
 
-    path ('calibration_reports/', CalibrationReportView.as_view(), name="all-calibration-reports"),
-
     path('update_instrument_shed/', UpdateInstrumentShedView.as_view(), name='update_instrument_shed'),
 
-    path('instrument-calibration-history/<int:instrument_id>/', InstrumentCalibrationHistoryView.as_view(), name='instrument-calibration-history'),
     path('instruments_by_tool_group/<int:tool_group_id>/', InstrumentsByGroupView.as_view(), name='instruments-by-group'),
     path('pending-service-orders/vendor/<int:vendor_id>/', PendingServiceOrdersByVendorView.as_view(), name='pending-service-orders-by-vendor'),
 

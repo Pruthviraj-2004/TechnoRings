@@ -15,13 +15,14 @@ class InstrumentFamilyGroupSerializer(serializers.ModelSerializer):
 
 class InstrumentModelSerializer(serializers.ModelSerializer):
     type_of_tool_name = serializers.CharField(source='type_of_tool.tool_group_name', read_only=True)
+    current_shed_name = serializers.CharField(source='current_shed.name', read_only=True)
 
     class Meta:
         model = InstrumentModel
         fields = [
             'instrument_no', 'instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 
             'description', 'instrument_range', 'least_count', 'calibration_frequency', 
-            'service_status', 'type_of_tool', 'type_of_tool_name'
+            'service_status', 'type_of_tool', 'type_of_tool_name', 'current_shed', 'current_shed_name'
         ]
 
 class SimpleInstrumentModelSerializer(serializers.ModelSerializer):
