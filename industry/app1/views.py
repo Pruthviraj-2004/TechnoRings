@@ -964,54 +964,6 @@ class AddShedDetailsView(View):
         else:
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
-
-@method_decorator(csrf_exempt, name='dispatch')
-class UpdateShedDetailsView(View):
-
-    def get(self, request, shed_id):
-        shed = get_object_or_404(ShedDetails, pk=shed_id)
-        shed_data = {'shed_id': shed.shed_id,'name': shed.name,'location': shed.location,'phone_number': shed.phone_number}
-        return JsonResponse({'success': True, 'data': shed_data})
-        
-    # def post(self, request, shed_id):
-    #     shed = get_object_or_404(ShedDetails, pk=shed_id)
-    #     body_data = json.loads(request.body)
-
-    #     name = body_data.get('name')
-    #     location = body_data.get('location')
-    #     phone_number = body_data.get('phone_number')
-
-    #     shed_details_data = {'name': name,'location': location,'phone_number': phone_number}
-
-    #     form = ShedDetailsForm(shed_details_data, instance=shed)
-
-    #     if form.is_valid():
-    #         form.save()
-    #         return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
-    #     else:
-    #         errors = form.errors.as_json()
-    #         return JsonResponse({'success': False, 'errors': errors}, status=400)
-    def post(self, request, shed_id):
-        shed = get_object_or_404(ShedDetails, pk=shed_id)
-        body_data = json.loads(request.body)
-
-        name = body_data.get('name')
-        location = body_data.get('location')
-        phone_number = body_data.get('phone_number')
-
-        updated_fields = {}
-        if name is not None:
-            updated_fields['name'] = name
-        if location is not None:
-            updated_fields['location'] = location
-        if phone_number is not None:
-            updated_fields['phone_number'] = phone_number
-
-        if updated_fields:
-            ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
-        else:
-            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
         
 @method_decorator(csrf_exempt, name='dispatch')
 class AddShedToolsView(View):
@@ -1286,14 +1238,23 @@ class InstrumentsByGroupView(APIView):
         
         return Response({'tool_group': tool_group.tool_group_name,'instruments': serialized_instruments})
 
+# class PendingServiceOrdersByVendorView(APIView):
+#     def get(self, request, vendor_id):
+#         vendor = get_object_or_404(Vendor, pk=vendor_id)
+        
+#         pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
+#         serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
+        
+#         return Response({'vendor': vendor.name,'pending_service_orders': serialized_service_orders})
+
 class PendingServiceOrdersByVendorView(APIView):
-    def get(self, request, vendor_id):
-        vendor = get_object_or_404(Vendor, pk=vendor_id)
+    def get(self, request, vendor_id):        
+        vendor = get_object_or_404(Vendor, pk=vendor_id, vendor_type=1)#1=vendor type - calibration agency
         
         pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
         serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
         
-        return Response({'vendor': vendor.name,'pending_service_orders': serialized_service_orders})
+        return Response({'vendor': vendor.name, 'pending_service_orders': serialized_service_orders})
 
 @method_decorator(csrf_exempt, name='dispatch')
 def login_view(request):
@@ -1311,3 +1272,250 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateShedDetailsView(View):
+
+    def get(self, request, shed_id):
+        shed = get_object_or_404(ShedDetails, pk=shed_id)
+        shed_data = {'shed_id': shed.shed_id,'name': shed.name,'location': shed.location,'phone_number': shed.phone_number}
+        return JsonResponse({'success': True, 'data': shed_data})
+        
+    def post(self, request, shed_id):
+        shed = get_object_or_404(ShedDetails, pk=shed_id)
+        body_data = json.loads(request.body)
+
+        name = body_data.get('name')
+        location = body_data.get('location')
+        phone_number = body_data.get('phone_number')
+
+        updated_fields = {}
+        if name is not None:
+            updated_fields['name'] = name
+        if location is not None:
+            updated_fields['location'] = location
+        if phone_number is not None:
+            updated_fields['phone_number'] = phone_number
+
+        if updated_fields:
+            ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateVendorView(View):
+
+    def get(self, request, vendor_id):
+        vendor = get_object_or_404(Vendor, pk=vendor_id)
+        vendor_data = {
+            'vendor_id': vendor.vendor_id,
+            'name': vendor.name,
+            'location': vendor.location,
+            'address': vendor.address,
+            'phone_number': vendor.phone_number,
+            'email': vendor.email,
+            'nabl_number': vendor.nabl_number,
+            'nabl_certificate': vendor.nabl_certificate.url if vendor.nabl_certificate else None,
+            'vendor_type': vendor.vendor_type_id
+        }
+        return JsonResponse({'success': True, 'data': vendor_data})
+        
+    def post(self, request, vendor_id):
+        vendor = get_object_or_404(Vendor, pk=vendor_id)
+        body_data = json.loads(request.body)
+
+        name = body_data.get('name')
+        location = body_data.get('location')
+        address = body_data.get('address')
+        phone_number = body_data.get('phone_number')
+        email = body_data.get('email')
+        nabl_number = body_data.get('nabl_number')
+        vendor_type_id = body_data.get('vendor_type')
+
+        updated_fields = {}
+        if name is not None:
+            updated_fields['name'] = name
+        if location is not None:
+            updated_fields['location'] = location
+        if address is not None:
+            updated_fields['address'] = address
+        if phone_number is not None:
+            updated_fields['phone_number'] = phone_number
+        if email is not None:
+            updated_fields['email'] = email
+        if nabl_number is not None:
+            updated_fields['nabl_number'] = nabl_number
+        if vendor_type_id is not None:
+            updated_fields['vendor_type_id'] = vendor_type_id
+
+        if updated_fields:
+            Vendor.objects.filter(pk=vendor_id).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateInstrumentGroupMasterView(View):
+
+    def get(self, request, tool_group_id):
+        group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
+        group_data = {
+            'tool_group_id': group.tool_group_id,
+            'tool_group_name': group.tool_group_name,
+            'tool_group_code': group.tool_group_code
+        }
+        return JsonResponse({'success': True, 'data': group_data})
+        
+    def post(self, request, tool_group_id):
+        group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
+        body_data = json.loads(request.body)
+
+        tool_group_name = body_data.get('tool_group_name')
+        tool_group_code = body_data.get('tool_group_code')
+
+        updated_fields = {}
+        if tool_group_name is not None:
+            updated_fields['tool_group_name'] = tool_group_name
+        if tool_group_code is not None:
+            updated_fields['tool_group_code'] = tool_group_code
+
+        if updated_fields:
+            InstrumentGroupMaster.objects.filter(pk=tool_group_id).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Instrument group details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateInstrumentFamilyGroupView(View):
+
+    def get(self, request, instrument_family_id):
+        family = get_object_or_404(InstrumentFamilyGroup, pk=instrument_family_id)
+        family_data = {
+            'instrument_family_id': family.instrument_family_id,
+            'instrument_family_name': family.instrument_family_name,
+            'instrument_group_master': family.instrument_group_master_id
+        }
+        return JsonResponse({'success': True, 'data': family_data})
+        
+    def post(self, request, instrument_family_id):
+        family = get_object_or_404(InstrumentFamilyGroup, pk=instrument_family_id)
+        body_data = json.loads(request.body)
+
+        instrument_family_name = body_data.get('instrument_family_name')
+        instrument_group_master_id = body_data.get('instrument_group_master')
+
+        updated_fields = {}
+        if instrument_family_name is not None:
+            updated_fields['instrument_family_name'] = instrument_family_name
+        if instrument_group_master_id is not None:
+            updated_fields['instrument_group_master_id'] = instrument_group_master_id
+
+        if updated_fields:
+            InstrumentFamilyGroup.objects.filter(pk=instrument_family_id).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Instrument family group details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateInstrumentModelView(View):
+
+    def get(self, request, instrument_no):
+        instrument = get_object_or_404(InstrumentModel, pk=instrument_no)
+        instrument_data = {
+            'instrument_no': instrument.instrument_no,
+            'instrument_name': instrument.instrument_name,
+            'manufacturer_name': instrument.manufacturer_name,
+            'year_of_purchase': instrument.year_of_purchase,
+            'gst': instrument.gst,
+            'description': instrument.description,
+            'instrument_range': instrument.instrument_range,
+            'least_count': instrument.least_count,
+            'type_of_tool': instrument.type_of_tool_id,
+            'calibration_frequency': instrument.calibration_frequency,
+            'service_status': instrument.service_status,
+            'current_shed': instrument.current_shed_id
+        }
+        return JsonResponse({'success': True, 'data': instrument_data})
+        
+    def post(self, request, instrument_no):
+        instrument = get_object_or_404(InstrumentModel, pk=instrument_no)
+        body_data = json.loads(request.body)
+
+        instrument_name = body_data.get('instrument_name')
+        manufacturer_name = body_data.get('manufacturer_name')
+        year_of_purchase = body_data.get('year_of_purchase')
+        gst = body_data.get('gst')
+        description = body_data.get('description')
+        instrument_range = body_data.get('instrument_range')
+        least_count = body_data.get('least_count')
+        type_of_tool_id = body_data.get('type_of_tool')
+        calibration_frequency = body_data.get('calibration_frequency')
+
+        updated_fields = {}
+        if instrument_name is not None:
+            updated_fields['instrument_name'] = instrument_name
+        if manufacturer_name is not None:
+            updated_fields['manufacturer_name'] = manufacturer_name
+        if year_of_purchase is not None:
+            updated_fields['year_of_purchase'] = year_of_purchase
+        if gst is not None:
+            updated_fields['gst'] = gst
+        if description is not None:
+            updated_fields['description'] = description
+        if instrument_range is not None:
+            updated_fields['instrument_range'] = instrument_range
+        if least_count is not None:
+            updated_fields['least_count'] = least_count
+        if type_of_tool_id is not None:
+            updated_fields['type_of_tool_id'] = type_of_tool_id
+        if calibration_frequency is not None:
+            updated_fields['calibration_frequency'] = calibration_frequency
+
+        if updated_fields:
+            InstrumentModel.objects.filter(pk=instrument_no).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Instrument details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)  
+        
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateVendorHandlesView(View):
+
+    def get(self, request, vendorhandle_id):
+        vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
+        vendor_handle_data = {
+            'vendorhandle_id': vendor_handle.vendorhandle_id,
+            'vendor': vendor_handle.vendor_id,
+            'tool': vendor_handle.tool_id,
+            'turnaround_time': vendor_handle.turnaround_time,
+            'cost': vendor_handle.cost
+        }
+        return JsonResponse({'success': True, 'data': vendor_handle_data})
+        
+    def post(self, request, vendorhandle_id):
+        vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
+        body_data = json.loads(request.body)
+
+        vendor_id = body_data.get('vendor')
+        tool_id = body_data.get('tool')
+        turnaround_time = body_data.get('turnaround_time')
+        cost = body_data.get('cost')
+
+        updated_fields = {}
+        if vendor_id is not None:
+            vendor = get_object_or_404(Vendor, pk=vendor_id)
+            updated_fields['vendor'] = vendor
+        if tool_id is not None:
+            tool = get_object_or_404(InstrumentModel, pk=tool_id)
+            updated_fields['tool'] = tool
+        if turnaround_time is not None:
+            updated_fields['turnaround_time'] = turnaround_time
+        if cost is not None:
+            updated_fields['cost'] = cost
+
+        if updated_fields:
+            VendorHandles.objects.filter(pk=vendorhandle_id).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Vendor handle details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+        

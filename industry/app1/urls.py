@@ -43,6 +43,13 @@ urlpatterns = [
     path('add_vendor_handles/', AddVendorHandlesView.as_view(), name='add_vendor_handles'),
 
     path('update_shed/<int:shed_id>/', UpdateShedDetailsView.as_view(), name='update_shed'),
+    path('update_vendor/<int:vendor_id>/', UpdateVendorView.as_view(), name='update_vendor'),
+    path('update_vendor_handles/<int:vendorhandle_id>/', UpdateVendorHandlesView.as_view(), name='update_vendor_handles'),
+    path('update_instrument_group/<int:tool_group_id>/', UpdateInstrumentGroupMasterView.as_view(), name='update_instrument_group'),
+    path('update_instrument_family/<int:instrument_family_id>/', UpdateInstrumentFamilyGroupView.as_view(), name='update_instrument_family'),
+    path('update_instrument/<int:instrument_no>/', UpdateInstrumentModelView.as_view(), name='update_instrument'),
+    # path('update_transport_order/<int:movement_id>/', UpdateTransportOrderView.as_view(), name='update_transport_order'),
+    # path('update_service_order/<int:service_id>/', UpdateServiceOrderView.as_view(), name='update_service_order'),
 
 
     path('vendor/<int:vendor_id>/delete/', VendorDeleteView.as_view(), name='vendor_delete'),
@@ -73,7 +80,7 @@ urlpatterns = [
     
     path('count_of/', CountOfObjects.as_view(), name='count_of'),
 
-    path('update_instrument_shed/', UpdateInstrumentShedView.as_view(), name='update_instrument_shed'),
+    path('update_instrument_shed/', UpdateInstrumentShedView.as_view(), name='update_instrument_shed'),#for updating the current shed of the instrument
 
     path('instruments_by_tool_group/<int:tool_group_id>/', InstrumentsByGroupView.as_view(), name='instruments-by-group'),
     path('pending-service-orders/vendor/<int:vendor_id>/', PendingServiceOrdersByVendorView.as_view(), name='pending-service-orders-by-vendor'),
