@@ -43,15 +43,15 @@ class InstrumentFamilyGroup(models.Model):
     class Meta:
         unique_together = ('instrument_family_name', 'instrument_group_master')
 
-    def __str(self):
+    def __str__(self):
         return f"{self.instrument_family_name}"
 
 class ShedDetails(models.Model):
     shed_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=24)
     location = models.CharField(max_length=32)
-    phone_number = models.CharField(max_length=12)  # 15 to accommodate international formats
-    password = models.CharField(max_length=16, default="1234")  # Consider using Django's auth system
+    phone_number = models.CharField(max_length=12)
+    password = models.CharField(max_length=16, default="1234")
     shed_note = models.TextField(default="Everything clear", blank=True, null=True)
 
     def __str__(self):
@@ -76,10 +76,10 @@ class InstrumentModel(models.Model):
     type_of_tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING)
     calibration_frequency = models.IntegerField(default=365, blank=True, null=True)
     service_status = models.BooleanField(default=False)
-    current_shed = models.ForeignKey(ShedDetails, on_delete=models.CASCADE, default=6, blank=True, null=True)
+    current_shed = models.ForeignKey(ShedDetails, on_delete=models.DO_NOTHING, default=6, blank=True, null=True)
 
     class Meta:
-        unique_together = ('instrument_name',)
+        unique_together = ('instrument_name', 'type_of_tool')
 
     def __str__(self):
         return f"{self.instrument_name} - ({self.type_of_tool})"
