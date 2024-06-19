@@ -78,4 +78,7 @@ urlpatterns = [
     path('instruments_by_tool_group/<int:tool_group_id>/', InstrumentsByGroupView.as_view(), name='instruments-by-group'),
     path('pending-service-orders/vendor/<int:vendor_id>/', PendingServiceOrdersByVendorView.as_view(), name='pending-service-orders-by-vendor'),
 
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+
 ]

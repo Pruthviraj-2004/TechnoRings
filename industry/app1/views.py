@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
-from .forms import AnotherServiceOrderForm, AnotherServiceToolForm, CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentForm, InstrumentGroupMasterForm, ShedDetailsForm, ShedToolsForm, TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
+from .forms import AnotherServiceOrderForm, AnotherServiceToolForm, CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentForm, InstrumentGroupMasterForm, ShedDetailsForm, ShedLoginForm, ShedToolsForm, TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm
 from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
 from rest_framework import status
 from rest_framework.response import Response
@@ -16,6 +16,9 @@ from django.utils import timezone
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required
 
 class VendorTypeView(APIView):
     def get(self, request):
@@ -593,117 +596,6 @@ class GenerateBillView(View):
         data = {'bill_items': bill_items,'total_amount': total_amount}
         return JsonResponse(data)
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# class StoreDeliveryChallan(APIView):
-#     parser_classes = (MultiPartParser, FormParser)
-    
-#     def post(self, request):
-#         data = request.data
-
-#         # Retrieve the service order to get the vendor
-#         service_id = data.get('service')
-#         if not service_id:
-#             return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
-
-#         try:
-#             service_order = ServiceOrder.objects.get(pk=service_id)
-#         except ServiceOrder.DoesNotExist:
-#             return JsonResponse({'success': False, 'errors': 'Invalid Service ID'}, status=400)
-
-#         vendor = service_order.vendor
-
-#         # Add the vendor to the data
-#         data = data.copy()  # Make a mutable copy of the data
-#         data['vendor'] = vendor.vendor_id
-
-#         # Create DeliveryChallan instance
-#         delivery_challan_form = DeliveryChallanForm(data)
-#         if delivery_challan_form.is_valid():
-#             delivery_challan = delivery_challan_form.save()
-
-#             # Process each tool's data
-#             tool_data_list = []
-#             index = 0
-#             while True:
-#                 tool_data = {
-#                     'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
-#                     'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
-#                     'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
-#                     'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
-#                     'result': data.get(f'toolData[{index}][result]'),
-#                     'action': data.get(f'toolData[{index}][action]'),
-#                     # 'next_calibration_date': data.get(f'toolData[{index}][next_calibration_date]'),
-#                     'remark': data.get(f'toolData[{index}][remark]'),
-#                     # 'notification_date': data.get(f'toolData[{index}][notification_date]'),
-#                     'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
-#                     'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
-#                 }
-#                 if not tool_data['calibration_tool']:
-#                     break
-#                 tool_data_list.append(tool_data)
-#                 index += 1
-
-#             # Collect errors for each tool's calibration report form
-#             errors = []
-#             for tool_info in tool_data_list:
-#                 calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
-#                 if calibration_report_form.is_valid():
-#                     calibration_report = calibration_report_form.save(commit=False)
-#                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
-                    
-#                     # Handle first file
-#                     if tool_info['calibration_report_file']:
-#                         calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
-
-#                     # Handle second file
-#                     if tool_info['calibration_report_file2']:
-#                         calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
-
-#                     # Calculate next calibration date and notification date
-#                     calibration_frequency = calibration_report.calibration_tool.calibration_frequency
-#                     calibration_date = calibration_report.calibration_date
-#                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
-#                     calibration_report.next_calibration_date = next_calibration_date
-
-#                     try:
-#                         # Filter by tool and vendor
-#                         vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool, vendor=vendor).first()
-#                         if not vendor_handle:
-#                             raise VendorHandles.DoesNotExist
-
-#                         turnaround_time = vendor_handle.turnaround_time
-#                         notification_date = next_calibration_date - timedelta(days=turnaround_time)
-#                         calibration_report.notification_date = notification_date
-#                     except VendorHandles.DoesNotExist:
-#                         errors.append({
-#                             'tool': tool_info['calibration_tool'],
-#                             'errors': 'Vendor handle not found for the selected tool.'
-#                         })
-#                         continue
-
-#                     calibration_report.save()
-
-#                     # Create DeliveryChallanTools instance
-#                     delivery_challan_tool = DeliveryChallanTools(
-#                         deliverychallan=delivery_challan,
-#                         tool_id=tool_info['calibration_tool'],
-#                         calibration_report=calibration_report
-#                     )
-#                     delivery_challan_tool.save()
-#                 else:
-#                     errors.append({
-#                         'tool': tool_info['calibration_tool'],
-#                         'errors': calibration_report_form.errors
-#                     })
-
-#             if errors:
-#                 return JsonResponse({'success': False, 'errors': errors}, status=400)
-#             else:
-#                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
-#         else:
-#             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
-
-
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -941,10 +833,7 @@ class AddInstrumentGroupMasterView(View):
         tool_group_name = body_data.get('toolGroupName')
         tool_group_code = body_data.get('toolGroupCode')
 
-        instrument_group_master_data = {
-            'tool_group_name': tool_group_name,
-            'tool_group_code': tool_group_code,
-        }
+        instrument_group_master_data = {'tool_group_name': tool_group_name,'tool_group_code': tool_group_code,}
 
         form = InstrumentGroupMasterForm(instrument_group_master_data)
 
@@ -979,10 +868,7 @@ class AddInstrumentFamilyView(View):
         except InstrumentGroupMaster.DoesNotExist:
             return JsonResponse({'success': False, 'errors': 'Instrument Group Master does not exist'}, status=400)
 
-        instrument_family_data = {
-            'instrument_family_name': instrument_family_name,
-            'instrument_group_master': instrument_group_master.tool_group_id
-        }
+        instrument_family_data = {'instrument_family_name': instrument_family_name,'instrument_group_master': instrument_group_master.tool_group_id}
 
         form = InstrumentFamilyGroupForm(data=instrument_family_data)
 
@@ -1042,8 +928,7 @@ class AddVendorHandlesView(View):
         turnaround_time = body_data.get('turnaround_time')
         cost = body_data.get('cost')
 
-        vendor_handles_data = {'vendor': vendor_id,
-'tool': tool_id,'turnaround_time': turnaround_time,'cost': cost}
+        vendor_handles_data = {'vendor': vendor_id,'tool': tool_id,'turnaround_time': turnaround_time,'cost': cost}
 
         form = VendorHandlesForm(vendor_handles_data)
 
@@ -1067,8 +952,9 @@ class AddShedDetailsView(View):
         location = body_data.get('location')
         address = body_data.get('address')
         phone_number = body_data.get('phone_number')
+        password1 = body_data.get('password1')
 
-        shed_details_data = {'name': name,'location': location,'address': address,'phone_number': phone_number}
+        shed_details_data = {'name': name,'location': location,'address': address,'phone_number': phone_number,'password':password1}
 
         form = ShedDetailsForm(shed_details_data)
 
@@ -1087,6 +973,24 @@ class UpdateShedDetailsView(View):
         shed_data = {'shed_id': shed.shed_id,'name': shed.name,'location': shed.location,'phone_number': shed.phone_number}
         return JsonResponse({'success': True, 'data': shed_data})
         
+    # def post(self, request, shed_id):
+    #     shed = get_object_or_404(ShedDetails, pk=shed_id)
+    #     body_data = json.loads(request.body)
+
+    #     name = body_data.get('name')
+    #     location = body_data.get('location')
+    #     phone_number = body_data.get('phone_number')
+
+    #     shed_details_data = {'name': name,'location': location,'phone_number': phone_number}
+
+    #     form = ShedDetailsForm(shed_details_data, instance=shed)
+
+    #     if form.is_valid():
+    #         form.save()
+    #         return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
+    #     else:
+    #         errors = form.errors.as_json()
+    #         return JsonResponse({'success': False, 'errors': errors}, status=400)
     def post(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
         body_data = json.loads(request.body)
@@ -1095,16 +999,19 @@ class UpdateShedDetailsView(View):
         location = body_data.get('location')
         phone_number = body_data.get('phone_number')
 
-        shed_details_data = {'name': name,'location': location,'phone_number': phone_number}
+        updated_fields = {}
+        if name is not None:
+            updated_fields['name'] = name
+        if location is not None:
+            updated_fields['location'] = location
+        if phone_number is not None:
+            updated_fields['phone_number'] = phone_number
 
-        form = ShedDetailsForm(shed_details_data, instance=shed)
-
-        if form.is_valid():
-            form.save()
+        if updated_fields:
+            ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
             return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
         else:
-            errors = form.errors.as_json()
-            return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
         
 @method_decorator(csrf_exempt, name='dispatch')
 class AddShedToolsView(View):
@@ -1347,20 +1254,17 @@ class UpdateInstrumentShedView(View):
         updated_count = 0
 
         for instrument in instruments:
-            # Find all sheds where this instrument is present
             found_shed = None
             for shed in sheds:
                 if self.instrument_in_shed(instrument, shed):
                     found_shed = shed
                     break
             
-            # Update current_shed field for the instrument
             if found_shed:
                 instrument.current_shed = found_shed
                 instrument.save()
                 updated_count += 1
             else:
-                # If not found in any shed, set current_shed to None
                 instrument.current_shed = None
                 instrument.save()
 
@@ -1375,29 +1279,35 @@ class UpdateInstrumentShedView(View):
           
 class InstrumentsByGroupView(APIView):
     def get(self, request, tool_group_id):
-        # Retrieve the tool group
         tool_group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
         
-        # Get the instruments for the specified tool group
-        instruments = InstrumentModel.objects.filter(type_of_tool=tool_group)
-        
-        # Serialize the instruments
+        instruments = InstrumentModel.objects.filter(type_of_tool=tool_group)      
         serialized_instruments = InstrumentModelSerializer(instruments, many=True).data
         
         return Response({'tool_group': tool_group.tool_group_name,'instruments': serialized_instruments})
 
 class PendingServiceOrdersByVendorView(APIView):
     def get(self, request, vendor_id):
-        # Retrieve the vendor
         vendor = get_object_or_404(Vendor, pk=vendor_id)
         
-        # Get the pending service orders for the specified vendor
         pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
-        
-        # Serialize the pending service orders
         serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
         
-        return Response({
-            'vendor': vendor.name,
-            'pending_service_orders': serialized_service_orders
-        })
+        return Response({'vendor': vendor.name,'pending_service_orders': serialized_service_orders})
+
+@method_decorator(csrf_exempt, name='dispatch')
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'app1/login.html', {'form': form})
+
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('login')

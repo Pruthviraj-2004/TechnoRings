@@ -50,10 +50,19 @@ class ShedDetails(models.Model):
     shed_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=24)
     location = models.CharField(max_length=32)
-    phone_number = models.CharField(max_length=12)
+    phone_number = models.CharField(max_length=12)  # 15 to accommodate international formats
+    password = models.CharField(max_length=16, default="1234")  # Consider using Django's auth system
+    shed_note = models.TextField(default="Everything clear", blank=True, null=True)
 
     def __str__(self):
         return f"{self.name}"
+
+class ShedUser(models.Model):
+    sheduser_id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(ShedDetails, on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"{self.user.name}"
     
 class InstrumentModel(models.Model):
     instrument_no = models.AutoField(primary_key=True)
@@ -201,5 +210,4 @@ class DeliveryChallanTools(models.Model):
 
     def __str__(self):
         return f"DeliveryChallan ID: {self.deliverychallan.deliverychallan_id} - Tool: {self.tool.instrument_name}"
-
     
