@@ -1,5 +1,5 @@
 from django import forms
-from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ServiceOrder, ServiceTools, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles
+from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentFamilyGroup, InstrumentGroupMaster, InstrumentModel, ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
 
 class InstrumentForm(forms.ModelForm):
     class Meta:
@@ -133,3 +133,14 @@ class VendorHandlesForm(forms.ModelForm):
 class ShedLoginForm(forms.Form):
     shed_name = forms.CharField(max_length=24)
     password = forms.CharField(widget=forms.PasswordInput)
+
+class ServiceTypeForm(forms.ModelForm):
+    class Meta:
+        model = ServiceType
+        fields = '__all__'
+
+
+class VendorTypeForm(forms.ModelForm):
+    class Meta:
+        model = VendorType
+        fields = '__all__'
