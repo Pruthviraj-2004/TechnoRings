@@ -18,8 +18,8 @@ class InstrumentFamilyGroupAdmin(ImportExportModelAdmin):
 @admin.register(InstrumentModel)
 class InstrumentModelAdmin(ImportExportModelAdmin):
     resource_class = InstrumentModelResource
-    list_display = ('instrument_no', 'instrument_name', 'current_shed', 'type_of_tool', 'service_status', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'calibration_frequency')
-    list_filter = ('current_shed', 'type_of_tool', 'service_status')
+    list_display = ('instrument_no', 'instrument_name', 'current_shed', 'type_of_tool', 'notification_date','service_status', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'calibration_frequency')
+    list_filter = ('current_shed', 'type_of_tool', 'service_status','notification_date')
     search_fields = ('instrument_name', 'current_shed')
 
     def get_return_instrument_names(self, obj):

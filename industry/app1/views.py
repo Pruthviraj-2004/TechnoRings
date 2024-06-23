@@ -668,6 +668,17 @@ class StoreDeliveryChallan(APIView):
 
                     calibration_report.save()
 
+                    try:
+                        instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
+                        instrument.notification_date = notification_date
+                        instrument.save()
+                    except InstrumentModel.DoesNotExist:
+                        errors.append({
+                            'tool': tool_info['calibration_tool'],
+                            'errors': 'Instrument not found.'
+                        })
+                        continue
+
                     # Create DeliveryChallanTools instance
                     delivery_challan_tool = DeliveryChallanTools(
                         deliverychallan=delivery_challan,
@@ -1251,8 +1262,23 @@ class DeleteVendorTypeView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+# class CountOfObjects(View):
+#     def get(self, request):
+#         vendor_count = Vendor.objects.count()
+#         shed_count = ShedDetails.objects.count()
+#         instruments_count = InstrumentModel.objects.count()
+#         transport_order_count = TransportOrder.objects.count()
+#         service_order_count = ServiceOrder.objects.count()
+#         deliverychallan_count = DeliveryChallan.objects.count()
+
+#         # return render(request, 'app1/count_list.html', {'vendor_count':vendor_count,'shed_count':shed_count,'instruments_count':instruments_count})
+#         data = {'vendor_count': vendor_count,'shed_count': shed_count,'instruments_count': instruments_count,'transport_order_count': transport_order_count,'service_order_count': service_order_count,'deliverychallan_count': deliverychallan_count}
+        
+#         return JsonResponse(data)
+import datetime
+
 class CountOfObjects(View):
-    def get(self, request):
+    def get(self, request, month_no):
         vendor_count = Vendor.objects.count()
         shed_count = ShedDetails.objects.count()
         instruments_count = InstrumentModel.objects.count()
@@ -1260,11 +1286,44 @@ class CountOfObjects(View):
         service_order_count = ServiceOrder.objects.count()
         deliverychallan_count = DeliveryChallan.objects.count()
 
-        # return render(request, 'app1/count_list.html', {'vendor_count':vendor_count,'shed_count':shed_count,'instruments_count':instruments_count})
-        data = {'vendor_count': vendor_count,'shed_count': shed_count,'instruments_count': instruments_count,'transport_order_count': transport_order_count,'service_order_count': service_order_count,'deliverychallan_count': deliverychallan_count}
-        
-        return JsonResponse(data)
+        # Get the current date
+        current_date = timezone.now().date()
 
+        try:
+
+            # Calculate the start and end date of the specified month
+            year = current_date.year
+            if month_no < current_date.month:
+                year += 1
+            month_start = datetime.date(year, month_no, 1)
+            next_month = month_start.replace(day=28) + datetime.timedelta(days=4)
+            month_end = next_month - datetime.timedelta(days=next_month.day)
+
+            # Filter tools based on the selected month
+            tools_to_notify = InstrumentModel.objects.filter(
+                notification_date__month=month_no,
+                notification_date__year=year
+            )
+
+            tools_count = tools_to_notify.count()
+            tools_list = list(tools_to_notify.values('instrument_no', 'instrument_name', 'notification_date'))
+
+            data = {
+                'vendor_count': vendor_count,
+                'shed_count': shed_count,
+                'instruments_count': instruments_count,
+                'transport_order_count': transport_order_count,
+                'service_order_count': service_order_count,
+                'deliverychallan_count': deliverychallan_count,
+                'tools_to_notify_count': tools_count,
+                'tools_to_notify': tools_list
+            }
+
+            return JsonResponse({'success': True, 'data': data})
+        
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Invalid month number. Use a valid month number (1-12).'}, status=400)
+    
 class UpdateInstrumentShedView(View):
     def get(self, request, *args, **kwargs):
         instruments = InstrumentModel.objects.all()

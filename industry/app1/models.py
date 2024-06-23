@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.timezone import now
 
 class VendorType(models.Model):
     vendortype_id = models.AutoField(primary_key=True)
@@ -71,6 +72,7 @@ class InstrumentModel(models.Model):
     calibration_frequency = models.IntegerField(default=365, blank=True, null=True)
     service_status = models.BooleanField(default=False)
     current_shed = models.ForeignKey(ShedDetails, on_delete=models.SET_NULL, null=True, default=1, blank=True)
+    notification_date = models.DateField(null=True, blank=True, default=now)
 
     def __str__(self):
         return f"{self.instrument_name}"

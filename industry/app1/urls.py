@@ -89,7 +89,8 @@ urlpatterns = [
     path('all_delivery_challan/', AllDeliveryChallanView.as_view(), name='all-delivery-challan'),
     path('recent_delivery_challan/', RecentDeliveryChallanView.as_view(), name='recent-delivery-challan'),
     
-    path('count_of/', CountOfObjects.as_view(), name='count_of'),
+    # path('count_of/', CountOfObjects.as_view(), name='count_of'),
+    path('count_of/<int:month_no>/', CountOfObjects.as_view(), name='count_of'),
 
     path('update_instrument_shed/', UpdateInstrumentShedView.as_view(), name='update_instrument_shed'),#for updating the current shed of the instrument
 
