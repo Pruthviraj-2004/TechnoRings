@@ -819,11 +819,20 @@ class AddInstrumentGroupMasterView(View):
 
     def post(self, request):
         body_data = json.loads(request.body)
+        tool_group_name = body_data.get('tool_group_name')
+        tool_group_code = body_data.get('tool_group_code')
+        tool_family_id = body_data.get('tool_family')  # This will be the foreign key to InstrumentFamilyGroup
 
-        tool_group_name = body_data.get('toolGroupName')
-        tool_group_code = body_data.get('toolGroupCode')
+        try:
+            tool_family = InstrumentFamilyGroup.objects.get(pk=tool_family_id)
+        except InstrumentFamilyGroup.DoesNotExist:
+            return JsonResponse({'success': False, 'errors': 'Instrument Family Group does not exist'}, status=400)
 
-        instrument_group_master_data = {'tool_group_name': tool_group_name,'tool_group_code': tool_group_code,}
+        instrument_group_master_data = {
+            'tool_group_name': tool_group_name,
+            'tool_group_code': tool_group_code,
+            'tool_family': tool_family.instrument_family_id
+        }
 
         form = InstrumentGroupMasterForm(instrument_group_master_data)
 
@@ -849,16 +858,11 @@ class AddInstrumentFamilyView(View):
     
     def post(self, request):
         body_data = json.loads(request.body)
-
         instrument_family_name = body_data.get('instrument_family_name')
-        instrument_group_master_id = body_data.get('instrument_group_master')
 
-        try:
-            instrument_group_master = InstrumentGroupMaster.objects.get(pk=instrument_group_master_id)
-        except InstrumentGroupMaster.DoesNotExist:
-            return JsonResponse({'success': False, 'errors': 'Instrument Group Master does not exist'}, status=400)
-
-        instrument_family_data = {'instrument_family_name': instrument_family_name,'instrument_group_master': instrument_group_master.tool_group_id}
+        instrument_family_data = {
+            'instrument_family_name': instrument_family_name,
+        }
 
         form = InstrumentFamilyGroupForm(data=instrument_family_data)
 

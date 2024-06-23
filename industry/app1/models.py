@@ -19,32 +19,26 @@ class Vendor(models.Model):
     email = models.EmailField()
     nabl_number = models.CharField(max_length=32, default='0', blank=True, null=True)
     nabl_certificate = models.FileField(upload_to='vendor_certificates/', default=default_certificate_file, max_length=250 , blank=True, null=True)
-    vendor_type = models.ForeignKey(VendorType, on_delete=models.SET_DEFAULT, default=1)
+    vendor_type = models.ForeignKey(VendorType, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f"{self.name}"
+
+class InstrumentFamilyGroup(models.Model):
+    instrument_family_id = models.AutoField(primary_key=True)
+    instrument_family_name = models.CharField(max_length=32)
+
+    def __str__(self):
+        return f"{self.instrument_family_name}"
 
 class InstrumentGroupMaster(models.Model):
     tool_group_id = models.AutoField(primary_key=True)
     tool_group_name = models.CharField(max_length=32)
     tool_group_code = models.CharField(max_length=8)
-
-    class Meta:
-        unique_together = ('tool_group_name', 'tool_group_code')
+    tool_family = models.ForeignKey(InstrumentFamilyGroup, on_delete=models.SET_NULL, null=True, default=1)
 
     def __str__(self):
         return f"{self.tool_group_name}"
-
-class InstrumentFamilyGroup(models.Model):
-    instrument_family_id = models.AutoField(primary_key=True)
-    instrument_family_name = models.CharField(max_length=32)
-    instrument_group_master = models.ForeignKey(InstrumentGroupMaster, on_delete=models.PROTECT)
-
-    class Meta:
-        unique_together = ('instrument_family_name', 'instrument_group_master')
-
-    def __str__(self):
-        return f"{self.instrument_family_name}"
 
 class ShedDetails(models.Model):
     shed_id = models.AutoField(primary_key=True)
@@ -63,7 +57,7 @@ class ShedUser(models.Model):
     
     def __str__(self):
         return f"{self.user.name}"
-    
+
 class InstrumentModel(models.Model):
     instrument_no = models.AutoField(primary_key=True)
     instrument_name = models.CharField(max_length=32)
@@ -73,16 +67,13 @@ class InstrumentModel(models.Model):
     description = models.CharField(max_length=160, blank=True, null=True, default=None)
     instrument_range = models.CharField(max_length=16, blank=True, null=True, default=None)
     least_count = models.CharField(max_length=8, blank=True, null=True, default=None)
-    type_of_tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.DO_NOTHING)
+    type_of_tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.SET_NULL, null=True, blank=True, default=1)
     calibration_frequency = models.IntegerField(default=365, blank=True, null=True)
     service_status = models.BooleanField(default=False)
-    current_shed = models.ForeignKey(ShedDetails, on_delete=models.DO_NOTHING, default=6, blank=True, null=True)
-
-    class Meta:
-        unique_together = ('instrument_name', 'type_of_tool')
+    current_shed = models.ForeignKey(ShedDetails, on_delete=models.SET_NULL, null=True, default=1, blank=True)
 
     def __str__(self):
-        return f"{self.instrument_name} - ({self.type_of_tool})"
+        return f"{self.instrument_name}"
 
 class ShedTools(models.Model):
     shedtool_id = models.AutoField(primary_key=True)
@@ -98,8 +89,8 @@ class ShedTools(models.Model):
 class TransportOrder(models.Model):
     movement_id = models.AutoField(primary_key=True)
     movement_date = models.DateField()
-    source_shed = models.ForeignKey(ShedDetails, related_name='source_shed_transport_order', on_delete=models.CASCADE)
-    destination_shed = models.ForeignKey(ShedDetails, related_name='destination_shed_transport_order', on_delete=models.CASCADE)
+    source_shed = models.ForeignKey(ShedDetails, related_name='source_shed_transport_order', on_delete=models.SET_NULL, null=True)
+    destination_shed = models.ForeignKey(ShedDetails, related_name='destination_shed_transport_order', on_delete=models.SET_NULL, null=True)
     acknowledgment = models.BooleanField(default=False)
     tool_count = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -111,7 +102,7 @@ class TransportOrder(models.Model):
 class TransportTools(models.Model):
     transporttool_id = models.AutoField(primary_key=True)
     transport = models.ForeignKey(TransportOrder, on_delete=models.CASCADE)
-    tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
+    tool = models.ForeignKey(InstrumentModel, on_delete=models.SET_NULL, null=True)
     tool_movement_remarks = models.TextField(default="Transport Tool", blank=True, null=True)
     acknowledgment = models.BooleanField(default=False)
 
@@ -134,25 +125,25 @@ class ServiceOrder(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)  
     description = models.TextField(default="Service", blank=True, null=True)
     tool_count = models.IntegerField()
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True)
     service_pending = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
         
     def __str__(self):
-        return f"Service ID: {self.service_id} - Date: {self.date} - Vendor: {self.vendor.name} - Tool Count: {self.tool_count}"
+        return f"Service ID: {self.service_id} - Date: {self.date} - Tool Count: {self.tool_count}"
 
 class ServiceTools(models.Model):
     servicetool_id = models.AutoField(primary_key=True)
     service = models.ForeignKey(ServiceOrder, on_delete=models.CASCADE)
-    tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    tool = models.ForeignKey(InstrumentModel, on_delete=models.SET_NULL, null=True)
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True)
     service_type = models.ForeignKey(ServiceType, on_delete=models.SET_DEFAULT, default=1)
     service_remarks = models.TextField(default="Service Tool", blank=True, null=True)
     service_pending_tool = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"Service ID: {self.service.service_id} - Tool: {self.tool.instrument_name} - Service Vendor: {self.vendor.name}"
+        return f"Service ID: {self.service.service_id} - Tool: {self.tool.instrument_name}"
 
     class Meta:
         unique_together = ('service', 'tool', 'vendor')
@@ -173,7 +164,7 @@ class VendorHandles(models.Model):
 class DeliveryChallan(models.Model):
     deliverychallan_id = models.AutoField(primary_key=True)
     received_date = models.DateField()
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True)
     shed = models.ForeignKey(ShedDetails, related_name='shed_delivery_challan', on_delete=models.CASCADE)
     service = models.ForeignKey(ServiceOrder, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

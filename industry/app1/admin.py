@@ -6,14 +6,14 @@ from .resources import *
 @admin.register(InstrumentGroupMaster)
 class InstrumentGroupMasterAdmin(ImportExportModelAdmin):
     resource_class = InstrumentGroupMasterResource
-    list_display = ('tool_group_id', 'tool_group_name', 'tool_group_code')
+    list_display = ('tool_group_id', 'tool_group_name', 'tool_group_code','tool_family')
+    list_filter = ('tool_family',)
 
 @admin.register(InstrumentFamilyGroup)
 class InstrumentFamilyGroupAdmin(ImportExportModelAdmin):
     resource_class = InstrumentFamilyGroupResource
-    list_display = ('instrument_family_id', 'instrument_family_name', 'instrument_group_master')
-    search_fields = ('instrument_family_name',)
-    list_filter = ('instrument_group_master',)
+    list_display = ('instrument_family_id', 'instrument_family_name')
+    list_filter = ('instrument_family_name',)
 
 @admin.register(InstrumentModel)
 class InstrumentModelAdmin(ImportExportModelAdmin):

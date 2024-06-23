@@ -9,12 +9,12 @@ class InstrumentForm(forms.ModelForm):
 class InstrumentGroupMasterForm(forms.ModelForm):
     class Meta:
         model = InstrumentGroupMaster
-        fields = ['tool_group_name', 'tool_group_code']
+        fields = ['tool_group_name', 'tool_group_code','tool_family']
 
 class InstrumentFamilyGroupForm(forms.ModelForm):
     class Meta:
         model = InstrumentFamilyGroup
-        fields = ['instrument_family_name', 'instrument_group_master']
+        fields = ['instrument_family_name']
 
 class TransportMovementOrderForm(forms.ModelForm):
     class Meta:
