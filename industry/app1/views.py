@@ -1295,7 +1295,16 @@ class UpdateInstrumentShedView(View):
             return True
         except ShedTools.DoesNotExist:
             return False
-          
+
+class InstrumentsByFamilyView(APIView):
+    def get(self, request, instrument_family_id):
+        instrument_family = get_object_or_404(InstrumentFamilyGroup, pk=instrument_family_id)
+
+        tools = InstrumentGroupMaster.objects.filter(tool_family = instrument_family)
+        serialized_group_instruments = InstrumentGroupMasterSerializer(tools, many=True).data
+
+        return Response({'tool_family': instrument_family.instrument_family_name, 'tools':serialized_group_instruments})
+
 class InstrumentsByGroupView(APIView):
     def get(self, request, tool_group_id):
         tool_group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
@@ -1422,8 +1431,12 @@ class UpdateVendorView(View):
         return JsonResponse({'success': True, 'data': vendor_data})
         
     def post(self, request, vendor_id):
+        try:
+            body_data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+
         vendor = get_object_or_404(Vendor, pk=vendor_id)
-        body_data = json.loads(request.body)
 
         name = body_data.get('name')
         location = body_data.get('location')
