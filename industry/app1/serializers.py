@@ -1,17 +1,17 @@
 from rest_framework import serializers
 from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
 
+class InstrumentFamilyGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstrumentFamilyGroup
+        fields = '__all__'
+
 class InstrumentGroupMasterSerializer(serializers.ModelSerializer):
+    instrument_family_group_name = serializers.CharField(source='tool_family.instrument_family_name', read_only=True)
+
     class Meta:
         model = InstrumentGroupMaster
         fields = '__all__'
-
-class InstrumentFamilyGroupSerializer(serializers.ModelSerializer):
-    instrument_group_master_name = serializers.CharField(source='instrument_group_master.tool_group_name', read_only=True)
-
-    class Meta:
-        model = InstrumentFamilyGroup
-        fields = ['instrumentfamilyid', 'instrument_family_name', 'instrument_group_master', 'instrument_group_master_name']
 
 class InstrumentModelSerializer(serializers.ModelSerializer):
     type_of_tool_name = serializers.CharField(source='type_of_tool.tool_group_name', read_only=True)

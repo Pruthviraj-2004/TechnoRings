@@ -61,8 +61,8 @@ urlpatterns = [
     path('update_calibration_report/<int:calibrationtool_id>/', UpdateCalibrationReportView.as_view(), name='update_calibration_report'),
     path('update_delivery_challan_tools/<int:deliverychallantool_id>/', UpdateDeliveryChallanToolsView.as_view(), name='update_delivery_challan_tools'),
 
-    path('instrument_group/<int:tool_id>/delete/', DeleteInstrumentGroupMasterView.as_view(), name='delete_instrument_group'),
-    path('instrument_family/<int:instrumentfamilyid>/delete/', DeleteInstrumentFamilyGroupView.as_view(), name='delete_instrument_family_group'),
+    path('instrument_group/<int:tool_group_id>/delete/', DeleteInstrumentGroupMasterView.as_view(), name='delete_instrument_group'),
+    path('instrument_family/<int:instrument_family_id>/delete/', DeleteInstrumentFamilyGroupView.as_view(), name='delete_instrument_family_group'),
     path('instrument/<int:instrument_no>/delete/', DeleteInstrumentModelView.as_view(), name='delete_instrument_model'),
     path('vendor/<int:vendor_id>/delete/', VendorDeleteView.as_view(), name='vendor_delete'),
     path('vendor_type/<int:vendortype_id>/delete', DeleteVendorTypeView.as_view(), name='delete_vendor_type'),
