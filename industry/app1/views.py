@@ -752,7 +752,7 @@ class InstrumentServiceHistoryView(APIView):
                 'amount': service_tool.service.amount,
                 'description': service_tool.service.description,
                 'tool_count': service_tool.service.tool_count,
-                'vendor': service_tool.service.vendor.name
+                'vendor': service_tool.service.vendor.name if service_tool.service.vendor else None
             }
             serialized_service_history.append(service_order_data)
         
@@ -1262,19 +1262,6 @@ class DeleteVendorTypeView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
-# class CountOfObjects(View):
-#     def get(self, request):
-#         vendor_count = Vendor.objects.count()
-#         shed_count = ShedDetails.objects.count()
-#         instruments_count = InstrumentModel.objects.count()
-#         transport_order_count = TransportOrder.objects.count()
-#         service_order_count = ServiceOrder.objects.count()
-#         deliverychallan_count = DeliveryChallan.objects.count()
-
-#         # return render(request, 'app1/count_list.html', {'vendor_count':vendor_count,'shed_count':shed_count,'instruments_count':instruments_count})
-#         data = {'vendor_count': vendor_count,'shed_count': shed_count,'instruments_count': instruments_count,'transport_order_count': transport_order_count,'service_order_count': service_order_count,'deliverychallan_count': deliverychallan_count}
-        
-#         return JsonResponse(data)
 import datetime
 
 class CountOfObjects(View):
@@ -1306,7 +1293,7 @@ class CountOfObjects(View):
             )
 
             tools_count = tools_to_notify.count()
-            tools_list = list(tools_to_notify.values('instrument_no', 'instrument_name', 'notification_date'))
+            tools_list = list(tools_to_notify.values('instrument_no', 'instrument_name', 'notification_date', 'current_shed'))
 
             data = {
                 'vendor_count': vendor_count,
@@ -1384,7 +1371,8 @@ class PendingServiceOrdersByVendorView(APIView):
             pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
             serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
             pending_service_orders_by_vendor.append({
-                'vendor': vendor.name,
+                'vendor_id': vendor.vendor_id,
+                'vendor_name': vendor.name,
                 'pending_service_orders': serialized_service_orders
             })
         
