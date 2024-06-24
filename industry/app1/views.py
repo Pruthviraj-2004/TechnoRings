@@ -469,117 +469,6 @@ class GenerateBillView(View):
         data = {'bill_items': bill_items,'total_amount': total_amount}
         return JsonResponse(data)
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# class StoreDeliveryChallan(APIView):
-#     parser_classes = (MultiPartParser, FormParser)
-    
-#     def post(self, request):
-#         data = request.data
-
-#         # Retrieve the service order to get the vendor
-#         service_id = data.get('service')
-#         if not service_id:
-#             return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
-
-#         try:
-#             service_order = ServiceOrder.objects.get(pk=service_id)
-#         except ServiceOrder.DoesNotExist:
-#             return JsonResponse({'success': False, 'errors': 'Invalid Service ID'}, status=400)
-
-#         vendor = service_order.vendor
-
-#         # Add the vendor to the data
-#         data = data.copy()  # Make a mutable copy of the data
-#         data['vendor'] = vendor.vendor_id
-
-#         # Create DeliveryChallan instance
-#         delivery_challan_form = DeliveryChallanForm(data)
-#         if delivery_challan_form.is_valid():
-#             delivery_challan = delivery_challan_form.save()
-
-#             # Process each tool's data
-#             tool_data_list = []
-#             index = 0
-#             while True:
-#                 tool_data = {
-#                     'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
-#                     'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
-#                     'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
-#                     'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
-#                     'result': data.get(f'toolData[{index}][result]'),
-#                     'action': data.get(f'toolData[{index}][action]'),
-#                     'remark': data.get(f'toolData[{index}][remark]'),
-#                     'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
-#                     'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
-#                 }
-#                 if not tool_data['calibration_tool']:
-#                     break
-#                 tool_data_list.append(tool_data)
-#                 index += 1
-
-#             # Collect errors for each tool's calibration report form
-#             errors = []
-#             for tool_info in tool_data_list:
-#                 calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
-#                 if calibration_report_form.is_valid():
-#                     calibration_report = calibration_report_form.save(commit=False)
-#                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
-                    
-#                     # Handle first file
-#                     if tool_info['calibration_report_file']:
-#                         calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
-
-#                     # Handle second file
-#                     if tool_info['calibration_report_file2']:
-#                         calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
-
-#                     # Calculate next calibration date and notification date
-#                     calibration_frequency = calibration_report.calibration_tool.calibration_frequency
-#                     calibration_date = calibration_report.calibration_date
-#                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
-#                     calibration_report.next_calibration_date = next_calibration_date
-
-#                     try:
-#                         # Filter by tool and vendor
-#                         vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool, vendor=vendor).first()
-#                         if not vendor_handle:
-#                             raise VendorHandles.DoesNotExist
-
-#                         turnaround_time = vendor_handle.turnaround_time
-#                         notification_date = next_calibration_date - timedelta(days=turnaround_time)
-#                         calibration_report.notification_date = notification_date
-#                     except VendorHandles.DoesNotExist:
-#                         errors.append({
-#                             'tool': tool_info['calibration_tool'],
-#                             'errors': 'Vendor handle not found for the selected tool.'
-#                         })
-#                         continue
-
-#                     calibration_report.save()
-
-#                     # Create DeliveryChallanTools instance
-#                     delivery_challan_tool = DeliveryChallanTools(
-#                         deliverychallan=delivery_challan,
-#                         tool_id=tool_info['calibration_tool'],
-#                         calibration_report=calibration_report
-#                     )
-#                     delivery_challan_tool.save()
-#                 else:
-#                     errors.append({
-#                         'tool': tool_info['calibration_tool'],
-#                         'errors': calibration_report_form.errors
-#                     })
-
-#             if errors:
-#                 return JsonResponse({'success': False, 'errors': errors}, status=400)
-#             else:
-#                 # Update service_pending to False
-#                 service_order.service_pending = False
-#                 service_order.save()
-#                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
-#         else:
-#             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
-
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -671,6 +560,7 @@ class StoreDeliveryChallan(APIView):
                     try:
                         instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
                         instrument.notification_date = notification_date
+                        instrument.service_status = False
                         instrument.save()
                     except InstrumentModel.DoesNotExist:
                         errors.append({
@@ -1262,8 +1152,7 @@ class DeleteVendorTypeView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
-import datetime
-
+from datetime import datetime, timedelta
 class CountOfObjects(View):
     def get(self, request, month_no):
         vendor_count = Vendor.objects.count()
@@ -1277,14 +1166,13 @@ class CountOfObjects(View):
         current_date = timezone.now().date()
 
         try:
-
             # Calculate the start and end date of the specified month
             year = current_date.year
             if month_no < current_date.month:
                 year += 1
-            month_start = datetime.date(year, month_no, 1)
-            next_month = month_start.replace(day=28) + datetime.timedelta(days=4)
-            month_end = next_month - datetime.timedelta(days=next_month.day)
+            month_start = datetime(year, month_no, 1)
+            next_month = month_start.replace(day=28) + timedelta(days=4)
+            month_end = next_month - timedelta(days=next_month.day)
 
             # Filter tools based on the selected month
             tools_to_notify = InstrumentModel.objects.filter(
@@ -1293,7 +1181,17 @@ class CountOfObjects(View):
             )
 
             tools_count = tools_to_notify.count()
-            tools_list = list(tools_to_notify.values('instrument_no', 'instrument_name', 'notification_date', 'current_shed'))
+            tools_list = []
+
+            for tool in tools_to_notify:
+                remaining_days = (tool.notification_date - current_date).days
+                tools_list.append({
+                    'instrument_no': tool.instrument_no,
+                    'instrument_name': tool.instrument_name,
+                    'notification_date': tool.notification_date,
+                    'current_shed': tool.current_shed.name if tool.current_shed else None,
+                    'remaining_days': remaining_days
+                })
 
             data = {
                 'vendor_count': vendor_count,
@@ -1307,10 +1205,10 @@ class CountOfObjects(View):
             }
 
             return JsonResponse({'success': True, 'data': data})
-        
+
         except ValueError:
             return JsonResponse({'success': False, 'message': 'Invalid month number. Use a valid month number (1-12).'}, status=400)
-    
+
 class UpdateInstrumentShedView(View):
     def get(self, request, *args, **kwargs):
         instruments = InstrumentModel.objects.all()
