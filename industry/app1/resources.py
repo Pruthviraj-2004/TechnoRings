@@ -16,15 +16,14 @@ class VendorResource(resources.ModelResource):
 class InstrumentGroupMasterResource(resources.ModelResource):
     class Meta:
         model = InstrumentGroupMaster
-        fields = ('tool_group_id', 'tool_group_name', 'tool_group_code')
+        fields = ('tool_group_id', 'tool_group_name', 'tool_group_code', 'tool_family')
         import_id_fields = ('tool_group_id',)
 
 class InstrumentFamilyGroupResource(resources.ModelResource):
     class Meta:
         model = InstrumentFamilyGroup
-        fields = ('instrument_family_id', 'instrument_family_name', 'instrument_group_master')
+        fields = ('instrument_family_id', 'instrument_family_name')
         import_id_fields = ('instrument_family_id',)
-
 
 class ShedDetailsResource(resources.ModelResource):
     class Meta:

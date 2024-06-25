@@ -1577,11 +1577,69 @@ class UpdateVendorHandlesView(View):
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
         
+# @method_decorator(csrf_exempt, name='dispatch')
+# class UpdateTransportOrderView(View):
+
+#     def get(self, request, movement_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
+#         transport_order_data = {
+#             'movement_id': transport_order.movement_id,
+#             'movement_date': transport_order.movement_date,
+#             'source_shed': transport_order.source_shed_id,
+#             'destination_shed': transport_order.destination_shed_id,
+#             'acknowledgment': transport_order.acknowledgment,
+#             'tool_count': transport_order.tool_count,
+#             'created_at': transport_order.created_at,
+#             'updated_at': transport_order.updated_at
+#         }
+#         return JsonResponse({'success': True, 'data': transport_order_data})
+        
+#     def post(self, request, movement_id):
+#         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
+#         body_data = json.loads(request.body)
+
+#         movement_date = body_data.get('movement_date')
+#         source_shed_id = body_data.get('source_shed')
+#         destination_shed_id = body_data.get('destination_shed')
+#         acknowledgment = body_data.get('acknowledgment')
+#         tool_count = body_data.get('tool_count')
+
+#         updated_fields = {}
+#         if movement_date is not None:
+#             updated_fields['movement_date'] = movement_date
+#         if source_shed_id is not None:
+#             updated_fields['source_shed_id'] = source_shed_id
+#         if destination_shed_id is not None:
+#             updated_fields['destination_shed_id'] = destination_shed_id
+#         if acknowledgment is not None:
+#             updated_fields['acknowledgment'] = acknowledgment
+#         if tool_count is not None:
+#             updated_fields['tool_count'] = tool_count
+
+#         if updated_fields:
+#             TransportOrder.objects.filter(pk=movement_id).update(**updated_fields)
+#             return JsonResponse({'success': True, 'message': 'Transport order details updated successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+from django.db import transaction
+        
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateTransportOrderView(View):
 
     def get(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
+        transport_tools = TransportTools.objects.filter(transport=transport_order)
+
+        tools_data = [
+            {
+                'tool': tool.tool_id,
+                'tool_movement_remarks': tool.tool_movement_remarks,
+                'acknowledgment': tool.acknowledgment
+            }
+            for tool in transport_tools
+        ]
+
         transport_order_data = {
             'movement_id': transport_order.movement_id,
             'movement_date': transport_order.movement_date,
@@ -1589,11 +1647,13 @@ class UpdateTransportOrderView(View):
             'destination_shed': transport_order.destination_shed_id,
             'acknowledgment': transport_order.acknowledgment,
             'tool_count': transport_order.tool_count,
+            'tools': tools_data,
             'created_at': transport_order.created_at,
             'updated_at': transport_order.updated_at
         }
         return JsonResponse({'success': True, 'data': transport_order_data})
         
+    @transaction.atomic
     def post(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
         body_data = json.loads(request.body)
@@ -1603,6 +1663,7 @@ class UpdateTransportOrderView(View):
         destination_shed_id = body_data.get('destination_shed')
         acknowledgment = body_data.get('acknowledgment')
         tool_count = body_data.get('tool_count')
+        tools_data = body_data.get('tools', [])
 
         updated_fields = {}
         if movement_date is not None:
@@ -1618,15 +1679,94 @@ class UpdateTransportOrderView(View):
 
         if updated_fields:
             TransportOrder.objects.filter(pk=movement_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Transport order details updated successfully'})
-        else:
-            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+        # Update or create transport tools
+        tool_ids = []
+        for tool_data in tools_data:
+            tool_id = tool_data.get('tool')
+            tool_movement_remarks = tool_data.get('tool_movement_remarks')
+
+            tool_instance, created = TransportTools.objects.update_or_create(
+                transport=transport_order,
+                tool_id=tool_id,
+                defaults={'tool_movement_remarks': tool_movement_remarks}
+            )
+            tool_ids.append(tool_instance.transporttool_id)
+
+        # Delete transport tools that are not in the current request
+        TransportTools.objects.filter(transport=transport_order).exclude(pk__in=tool_ids).delete()
+
+        return JsonResponse({'success': True, 'message': 'Transport order and tools updated successfully'})
+
+# @method_decorator(csrf_exempt, name='dispatch')
+# class UpdateServiceOrderView(View):
+
+#     def get(self, request, service_id):
+#         service_order = get_object_or_404(ServiceOrder, pk=service_id)
+#         service_order_data = {
+#             'service_id': service_order.service_id,
+#             'date': service_order.date,
+#             'amount': service_order.amount,
+#             'description': service_order.description,
+#             'tool_count': service_order.tool_count,
+#             'vendor': service_order.vendor_id,
+#             'service_pending': service_order.service_pending,
+#             'created_at': service_order.created_at,
+#             'updated_at': service_order.updated_at
+#         }
+#         return JsonResponse({'success': True, 'data': service_order_data})
         
+#     def post(self, request, service_id):
+#         service_order = get_object_or_404(ServiceOrder, pk=service_id)
+#         body_data = json.loads(request.body)
+
+#         date = body_data.get('date')
+#         amount = body_data.get('amount')
+#         description = body_data.get('description')
+#         tool_count = body_data.get('tool_count')
+#         vendor_id = body_data.get('vendor')
+#         service_pending = body_data.get('service_pending')
+
+#         updated_fields = {}
+#         if date is not None:
+#             updated_fields['date'] = date
+#         if amount is not None:
+#             updated_fields['amount'] = amount
+#         if description is not None:
+#             updated_fields['description'] = description
+#         if tool_count is not None:
+#             updated_fields['tool_count'] = tool_count
+#         if vendor_id is not None:
+#             vendor = get_object_or_404(Vendor, pk=vendor_id)
+#             updated_fields['vendor'] = vendor
+#         if service_pending is not None:
+#             updated_fields['service_pending'] = service_pending
+
+#         if updated_fields:
+#             ServiceOrder.objects.filter(pk=service_id).update(**updated_fields)
+#             return JsonResponse({'success': True, 'message': 'Service order details updated successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateServiceOrderView(View):
 
     def get(self, request, service_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
+        service_tools = ServiceTools.objects.filter(service=service_order)
+
+        tools_data = [
+            {
+                'tool': tool.tool_id,
+                'vendor': tool.vendor_id,
+                'service_type': tool.service_type_id,
+                'service_remarks': tool.service_remarks,
+                'service_pending_tool': tool.service_pending_tool
+            }
+            for tool in service_tools
+        ]
+
         service_order_data = {
             'service_id': service_order.service_id,
             'date': service_order.date,
@@ -1635,11 +1775,13 @@ class UpdateServiceOrderView(View):
             'tool_count': service_order.tool_count,
             'vendor': service_order.vendor_id,
             'service_pending': service_order.service_pending,
+            'tools': tools_data,
             'created_at': service_order.created_at,
             'updated_at': service_order.updated_at
         }
         return JsonResponse({'success': True, 'data': service_order_data})
         
+    @transaction.atomic
     def post(self, request, service_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
         body_data = json.loads(request.body)
@@ -1650,6 +1792,7 @@ class UpdateServiceOrderView(View):
         tool_count = body_data.get('tool_count')
         vendor_id = body_data.get('vendor')
         service_pending = body_data.get('service_pending')
+        tools_data = body_data.get('tools', [])
 
         updated_fields = {}
         if date is not None:
@@ -1668,9 +1811,36 @@ class UpdateServiceOrderView(View):
 
         if updated_fields:
             ServiceOrder.objects.filter(pk=service_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Service order details updated successfully'})
-        else:
-            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+        # Update or create service tools
+        tool_ids = []
+        for tool_data in tools_data:
+            tool_id = tool_data.get('tool')
+            vendor_id = tool_data.get('vendor')
+            service_type_id = tool_data.get('service_type')
+            service_remarks = tool_data.get('service_remarks')
+            service_pending_tool = tool_data.get('service_pending_tool')
+
+            vendor = get_object_or_404(Vendor, pk=vendor_id)
+            service_type = get_object_or_404(ServiceType, pk=service_type_id)
+            tool = get_object_or_404(InstrumentModel, pk=tool_id)
+
+            tool_instance, created = ServiceTools.objects.update_or_create(
+                service=service_order,
+                tool=tool,
+                vendor=vendor,
+                defaults={
+                    'service_type': service_type,
+                    'service_remarks': service_remarks,
+                    'service_pending_tool': service_pending_tool
+                }
+            )
+            tool_ids.append(tool_instance.servicetool_id)
+
+        # Delete service tools that are not in the current request
+        ServiceTools.objects.filter(service=service_order).exclude(pk__in=tool_ids).delete()
+
+        return JsonResponse({'success': True, 'message': 'Service order and tools updated successfully'})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateTransportToolsView(View):
@@ -1757,7 +1927,6 @@ class UpdateServiceToolsView(View):
             return JsonResponse({'success': True, 'message': 'Service tool details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateDeliveryChallanView(View):
