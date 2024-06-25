@@ -1698,6 +1698,45 @@ class UpdateTransportOrderView(View):
 
         return JsonResponse({'success': True, 'message': 'Transport order and tools updated successfully'})
 
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateTransportToolsView(View):
+
+    def get(self, request, transporttool_id):
+        transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
+        transport_tool_data = {
+            'transporttool_id': transport_tool.transporttool_id,
+            'transport': transport_tool.transport_id,
+            'tool': transport_tool.tool_id,
+            'tool_movement_remarks': transport_tool.tool_movement_remarks,
+            'acknowledgment': transport_tool.acknowledgment
+        }
+        return JsonResponse({'success': True, 'data': transport_tool_data})
+        
+    def post(self, request, transporttool_id):
+        transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
+        body_data = json.loads(request.body)
+
+        transport = body_data.get('transport')
+        tool = body_data.get('tool')
+        tool_movement_remarks = body_data.get('tool_movement_remarks')
+        acknowledgment = body_data.get('acknowledgment')
+
+        updated_fields = {}
+        if transport is not None:
+            updated_fields['transport_id'] = transport
+        if tool is not None:
+            updated_fields['tool_id'] = tool
+        if tool_movement_remarks is not None:
+            updated_fields['tool_movement_remarks'] = tool_movement_remarks
+        if acknowledgment is not None:
+            updated_fields['acknowledgment'] = acknowledgment
+
+        if updated_fields:
+            TransportTools.objects.filter(pk=transporttool_id).update(**updated_fields)
+            return JsonResponse({'success': True, 'message': 'Transport tool details updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
 # @method_decorator(csrf_exempt, name='dispatch')
 # class UpdateServiceOrderView(View):
 
@@ -1747,7 +1786,6 @@ class UpdateTransportOrderView(View):
 #             return JsonResponse({'success': True, 'message': 'Service order details updated successfully'})
 #         else:
 #             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateServiceOrderView(View):
@@ -1806,8 +1844,6 @@ class UpdateServiceOrderView(View):
         if vendor_id is not None:
             vendor = get_object_or_404(Vendor, pk=vendor_id)
             updated_fields['vendor'] = vendor
-        if service_pending is not None:
-            updated_fields['service_pending'] = service_pending
 
         if updated_fields:
             ServiceOrder.objects.filter(pk=service_id).update(**updated_fields)
@@ -1819,7 +1855,6 @@ class UpdateServiceOrderView(View):
             vendor_id = tool_data.get('vendor')
             service_type_id = tool_data.get('service_type')
             service_remarks = tool_data.get('service_remarks')
-            service_pending_tool = tool_data.get('service_pending_tool')
 
             vendor = get_object_or_404(Vendor, pk=vendor_id)
             service_type = get_object_or_404(ServiceType, pk=service_type_id)
@@ -1832,7 +1867,6 @@ class UpdateServiceOrderView(View):
                 defaults={
                     'service_type': service_type,
                     'service_remarks': service_remarks,
-                    'service_pending_tool': service_pending_tool
                 }
             )
             tool_ids.append(tool_instance.servicetool_id)
@@ -1841,45 +1875,6 @@ class UpdateServiceOrderView(View):
         ServiceTools.objects.filter(service=service_order).exclude(pk__in=tool_ids).delete()
 
         return JsonResponse({'success': True, 'message': 'Service order and tools updated successfully'})
-
-@method_decorator(csrf_exempt, name='dispatch')
-class UpdateTransportToolsView(View):
-
-    def get(self, request, transporttool_id):
-        transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
-        transport_tool_data = {
-            'transporttool_id': transport_tool.transporttool_id,
-            'transport': transport_tool.transport_id,
-            'tool': transport_tool.tool_id,
-            'tool_movement_remarks': transport_tool.tool_movement_remarks,
-            'acknowledgment': transport_tool.acknowledgment
-        }
-        return JsonResponse({'success': True, 'data': transport_tool_data})
-        
-    def post(self, request, transporttool_id):
-        transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
-        body_data = json.loads(request.body)
-
-        transport = body_data.get('transport')
-        tool = body_data.get('tool')
-        tool_movement_remarks = body_data.get('tool_movement_remarks')
-        acknowledgment = body_data.get('acknowledgment')
-
-        updated_fields = {}
-        if transport is not None:
-            updated_fields['transport_id'] = transport
-        if tool is not None:
-            updated_fields['tool_id'] = tool
-        if tool_movement_remarks is not None:
-            updated_fields['tool_movement_remarks'] = tool_movement_remarks
-        if acknowledgment is not None:
-            updated_fields['acknowledgment'] = acknowledgment
-
-        if updated_fields:
-            TransportTools.objects.filter(pk=transporttool_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Transport tool details updated successfully'})
-        else:
-            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateServiceToolsView(View):
@@ -2060,6 +2055,108 @@ class UpdateDeliveryChallanToolsView(View):
             return JsonResponse({'success': True, 'message': 'Delivery challan tool details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateAllDeliveryChallanView(View):
+
+    def get(self, request, deliverychallan_id):
+        delivery_challan = get_object_or_404(DeliveryChallan, pk=deliverychallan_id)
+        delivery_challan_tools = DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan)
+
+        tools_data = [
+            {
+                'deliverychallantool_id': tool.deliverychallantool_id,
+                'tool': tool.tool_id,
+                'calibration_report': {
+                    'calibrationtool_id': tool.calibration_report.calibrationtool_id,
+                    'calibration_tool': tool.calibration_report.calibration_tool_id,
+                    'calibration_date': tool.calibration_report.calibration_date,
+                    'calibration_report_no': tool.calibration_report.calibration_report_no,
+                    'calibration_agency': tool.calibration_report.calibration_agency,
+                    'result': tool.calibration_report.result,
+                    'action': tool.calibration_report.action,
+                    'next_calibration_date': tool.calibration_report.next_calibration_date,
+                    'notification_date': tool.calibration_report.notification_date,
+                    'remark': tool.calibration_report.remark,
+                } if tool.calibration_report else None
+            }
+            for tool in delivery_challan_tools
+        ]
+
+        delivery_challan_data = {
+            'deliverychallan_id': delivery_challan.deliverychallan_id,
+            'received_date': delivery_challan.received_date,
+            'vendor': delivery_challan.vendor_id,
+            'shed': delivery_challan.shed_id,
+            'service': delivery_challan.service_id,
+            'tools': tools_data,
+            'created_at': delivery_challan.created_at,
+            'updated_at': delivery_challan.updated_at
+        }
+        return JsonResponse({'success': True, 'data': delivery_challan_data})
+
+    @transaction.atomic
+    def post(self, request, deliverychallan_id):
+        delivery_challan = get_object_or_404(DeliveryChallan, pk=deliverychallan_id)
+        body_data = json.loads(request.body)
+
+        received_date = body_data.get('receivedDate')
+        vendor_id = body_data.get('vendor')
+        shed_id = body_data.get('shed')
+        service_id = body_data.get('service')
+        tools_data = body_data.get('tools', [])
+
+        updated_fields = {}
+        if received_date is not None:
+            updated_fields['received_date'] = received_date
+        if vendor_id is not None:
+            updated_fields['vendor_id'] = vendor_id
+        if shed_id is not None:
+            updated_fields['shed_id'] = shed_id
+        if service_id is not None:
+            updated_fields['service_id'] = service_id
+
+        if updated_fields:
+            DeliveryChallan.objects.filter(pk=deliverychallan_id).update(**updated_fields)
+
+        # Update or create delivery challan tools and their calibration reports
+        tool_ids = []
+        for tool_data in tools_data:
+            calibration_date = tool_data.get('calibrationDate')
+            calibration_report_no = tool_data.get('calibrationReportNumber')
+            calibration_agency = tool_data.get('calibrationAgency')
+            result = tool_data.get('result')
+            action = tool_data.get('action')
+            next_calibration_date = tool_data.get('nextCalibrationDate')
+            remark = tool_data.get('remark')
+
+            tool = get_object_or_404(InstrumentModel, instrument_name=tool_data.get('toolName'))
+
+            calibration_report, created = CalibrationReport.objects.update_or_create(
+                calibration_tool=tool,
+                calibration_date=calibration_date,
+                defaults={
+                    'calibration_report_no': calibration_report_no,
+                    'calibration_agency': calibration_agency,
+                    'result': result,
+                    'action': action,
+                    'next_calibration_date': next_calibration_date,
+                    'remark': remark
+                }
+            )
+
+            delivery_challan_tool, created = DeliveryChallanTools.objects.update_or_create(
+                deliverychallan=delivery_challan,
+                tool=tool,
+                defaults={'calibration_report': calibration_report}
+            )
+
+            tool_ids.append(delivery_challan_tool.deliverychallantool_id)
+
+        # Delete delivery challan tools that are not in the current request
+        DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan).exclude(pk__in=tool_ids).delete()
+
+        return JsonResponse({'success': True, 'message': 'Delivery challan and tools updated successfully'})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateServiceTypeView(View):

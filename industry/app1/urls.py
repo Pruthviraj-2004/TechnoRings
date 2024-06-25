@@ -60,6 +60,7 @@ urlpatterns = [
     path('update_delivery_challan/<int:deliverychallan_id>/', UpdateDeliveryChallanView.as_view(), name='update_delivery_challan'),
     path('update_calibration_report/<int:calibrationtool_id>/', UpdateCalibrationReportView.as_view(), name='update_calibration_report'),
     path('update_delivery_challan_tools/<int:deliverychallantool_id>/', UpdateDeliveryChallanToolsView.as_view(), name='update_delivery_challan_tools'),
+    path('update_all_delivery_challan/<int:deliverychallan_id/', UpdateAllDeliveryChallanView.as_view(), name='update_all_delivery_challan'),
 
     path('instrument_group/<int:tool_group_id>/delete/', DeleteInstrumentGroupMasterView.as_view(), name='delete_instrument_group'),
     path('instrument_family/<int:instrument_family_id>/delete/', DeleteInstrumentFamilyGroupView.as_view(), name='delete_instrument_family_group'),

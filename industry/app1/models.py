@@ -29,6 +29,9 @@ class InstrumentFamilyGroup(models.Model):
     instrument_family_id = models.AutoField(primary_key=True)
     instrument_family_name = models.CharField(max_length=32)
 
+    class Meta:
+        unique_together = ('instrument_family_name',)
+
     def __str__(self):
         return f"{self.instrument_family_name}"
 
@@ -37,6 +40,9 @@ class InstrumentGroupMaster(models.Model):
     tool_group_name = models.CharField(max_length=32)
     tool_group_code = models.CharField(max_length=8)
     tool_family = models.ForeignKey(InstrumentFamilyGroup, on_delete=models.SET_NULL, null=True, default=1)
+
+    class Meta:
+        unique_together = ('tool_group_name',)
 
     def __str__(self):
         return f"{self.tool_group_name}"
@@ -48,6 +54,9 @@ class ShedDetails(models.Model):
     phone_number = models.CharField(max_length=12)
     password = models.CharField(max_length=16, default="1234")
     shed_note = models.TextField(default="Everything clear", blank=True, null=True)
+
+    class Meta:
+        unique_together = ('name',)
 
     def __str__(self):
         return f"{self.name}"
@@ -73,6 +82,9 @@ class InstrumentModel(models.Model):
     service_status = models.BooleanField(default=False)
     current_shed = models.ForeignKey(ShedDetails, on_delete=models.SET_NULL, null=True, default=1, blank=True)
     notification_date = models.DateField(null=True, blank=True, default=now)
+
+    class Meta:
+        unique_together = ('instrument_name',)
 
     def __str__(self):
         return f"{self.instrument_name}"
