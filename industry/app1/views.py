@@ -563,12 +563,35 @@ class StoreDeliveryChallan(APIView):
                         instrument.notification_date = notification_date
                         instrument.service_status = False
                         instrument.save()
+
                     except InstrumentModel.DoesNotExist:
                         errors.append({
                             'tool': tool_info['calibration_tool'],
                             'errors': 'Instrument not found.'
                         })
                         continue
+                    # try:
+                    #     instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
+                    #     instrument.notification_date = notification_date
+                    #     instrument.service_status = False
+                    #     instrument.save()
+
+                    #     # Update or create ShedTools instance for the selected shed
+                    #     selected_shed_id = data.get('shed_id')  # Assuming 'shed_id' is passed in the request data
+                    #     if selected_shed_id:
+                    #         selected_shed = ShedDetails.objects.get(pk=selected_shed_id)
+                    #         shed_tool_instance, created = ShedTools.objects.update_or_create(
+                    #             shed=selected_shed,
+                    #             using_tool=instrument,
+                    #             defaults={}
+                    #         )
+
+                    # except InstrumentModel.DoesNotExist:
+                    #     errors.append({
+                    #         'tool': tool_info['calibration_tool'],
+                    #         'errors': 'Instrument not found.'
+                    #     })
+                    #     continue
 
                     # Create DeliveryChallanTools instance
                     delivery_challan_tool = DeliveryChallanTools(
