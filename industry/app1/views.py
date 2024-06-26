@@ -469,10 +469,144 @@ class GenerateBillView(View):
         data = {'bill_items': bill_items,'total_amount': total_amount}
         return JsonResponse(data)
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class StoreDeliveryChallan(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
+    
+#     def post(self, request):
+#         data = request.data
+
+#         # Retrieve the service order to get the vendor
+#         service_id = data.get('service')
+#         if not service_id:
+#             return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
+
+#         try:
+#             service_order = ServiceOrder.objects.get(pk=service_id)
+#         except ServiceOrder.DoesNotExist:
+#             return JsonResponse({'success': False, 'errors': 'Invalid Service ID'}, status=400)
+
+#         vendor = service_order.vendor
+
+#         # Add the vendor to the data
+#         data = data.copy()  # Make a mutable copy of the data
+#         data['vendor'] = vendor.vendor_id
+
+#         # Create DeliveryChallan instance
+#         delivery_challan_form = DeliveryChallanForm(data)
+#         if delivery_challan_form.is_valid():
+#             delivery_challan = delivery_challan_form.save()
+
+#             # Process each tool's data
+#             tool_data_list = []
+#             index = 0
+#             while True:
+#                 tool_data = {
+#                     'calibration_tool': data.get(f'toolData[{index}][calibration_tool]'),
+#                     'calibration_date': data.get(f'toolData[{index}][calibration_date]'),
+#                     'calibration_report_no': data.get(f'toolData[{index}][calibration_report_no]'),
+#                     'calibration_agency': data.get(f'toolData[{index}][calibration_agency]'),
+#                     'result': data.get(f'toolData[{index}][result]'),
+#                     'action': data.get(f'toolData[{index}][action]'),
+#                     'remark': data.get(f'toolData[{index}][remark]'),
+#                     'calibration_report_file': request.FILES.get(f'toolData[{index}][calibration_report_file]'),
+#                     'calibration_report_file2': request.FILES.get(f'toolData[{index}][calibration_report_file2]')
+#                 }
+#                 if not tool_data['calibration_tool']:
+#                     break
+#                 tool_data_list.append(tool_data)
+#                 index += 1
+
+#             # Collect errors for each tool's calibration report form
+#             errors = []
+#             for tool_info in tool_data_list:
+#                 calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
+#                 if calibration_report_form.is_valid():
+#                     calibration_report = calibration_report_form.save(commit=False)
+#                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
+                    
+#                     # Handle first file
+#                     if tool_info['calibration_report_file']:
+#                         calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
+
+#                     # Handle second file
+#                     if tool_info['calibration_report_file2']:
+#                         calibration_report.calibration_report_file2.save(tool_info['calibration_report_file2'].name, tool_info['calibration_report_file2'])
+
+#                     # Calculate next calibration date and notification date
+#                     calibration_frequency = calibration_report.calibration_tool.calibration_frequency
+#                     calibration_date = calibration_report.calibration_date
+#                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
+#                     calibration_report.next_calibration_date = next_calibration_date
+
+#                     try:
+#                         # Filter by tool and vendor
+#                         vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool, vendor=vendor).first()
+#                         if not vendor_handle:
+#                             raise VendorHandles.DoesNotExist
+
+#                         turnaround_time = vendor_handle.turnaround_time
+#                         notification_date = next_calibration_date - timedelta(days=turnaround_time)
+#                         calibration_report.notification_date = notification_date
+#                     except VendorHandles.DoesNotExist:
+#                         errors.append({
+#                             'tool': tool_info['calibration_tool'],
+#                             'errors': 'Vendor handle not found for the selected tool.'
+#                         })
+#                         continue
+
+#                     calibration_report.save()
+
+#                     try:
+#                         instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
+#                         instrument.notification_date = notification_date
+#                         instrument.service_status = False
+#                         instrument.save()
+#                     except InstrumentModel.DoesNotExist:
+#                         errors.append({
+#                             'tool': tool_info['calibration_tool'],
+#                             'errors': 'Instrument not found.'
+#                         })
+#                         continue
+
+#                     # Create DeliveryChallanTools instance
+#                     delivery_challan_tool = DeliveryChallanTools(
+#                         deliverychallan=delivery_challan,
+#                         tool_id=tool_info['calibration_tool'],
+#                         calibration_report=calibration_report
+#                     )
+#                     delivery_challan_tool.save()
+
+#                     # Update ServiceTools service_pending_tool to False
+#                     ServiceTools.objects.filter(service=service_order, tool_id=tool_info['calibration_tool']).update(service_pending_tool=False)
+#                 else:
+#                     errors.append({
+#                         'tool': tool_info['calibration_tool'],
+#                         'errors': calibration_report_form.errors
+#                     })
+
+#             if errors:
+#                 return JsonResponse({'success': False, 'errors': errors}, status=400)
+#             else:
+#                 # Check if all tools' service_pending_tool is False for the service order
+#                 all_tools_pending = ServiceTools.objects.filter(service=service_order, service_pending_tool=True).exists()
+#                 if not all_tools_pending:
+#                     service_order.service_pending = False
+#                     service_order.save()
+
+#                 return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    
+
     def post(self, request):
         data = request.data
 
@@ -520,11 +654,15 @@ class StoreDeliveryChallan(APIView):
             # Collect errors for each tool's calibration report form
             errors = []
             for tool_info in tool_data_list:
-                calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
+                logger.debug(f'Processing tool data: {tool_info}')  # Debugging statement
+                calibration_report_form = CalibrationReportForm(tool_info, files={
+                    'calibration_report_file': tool_info['calibration_report_file'],
+                    'calibration_report_file2': tool_info['calibration_report_file2'],
+                })
                 if calibration_report_form.is_valid():
                     calibration_report = calibration_report_form.save(commit=False)
                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
-                    
+
                     # Handle first file
                     if tool_info['calibration_report_file']:
                         calibration_report.calibration_report_file.save(tool_info['calibration_report_file'].name, tool_info['calibration_report_file'])
@@ -1507,7 +1645,7 @@ class UpdateInstrumentModelView(View):
         description = body_data.get('description')
         instrument_range = body_data.get('instrument_range')
         least_count = body_data.get('least_count')
-        type_of_tool_id = body_data.get('type_of_tool')
+        type_of_tool_id = body_data.get('type_of_tool_id')
         calibration_frequency = body_data.get('calibration_frequency')
 
         updated_fields = {}
@@ -1576,53 +1714,6 @@ class UpdateVendorHandlesView(View):
             return JsonResponse({'success': True, 'message': 'Vendor handle details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-        
-# @method_decorator(csrf_exempt, name='dispatch')
-# class UpdateTransportOrderView(View):
-
-#     def get(self, request, movement_id):
-#         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
-#         transport_order_data = {
-#             'movement_id': transport_order.movement_id,
-#             'movement_date': transport_order.movement_date,
-#             'source_shed': transport_order.source_shed_id,
-#             'destination_shed': transport_order.destination_shed_id,
-#             'acknowledgment': transport_order.acknowledgment,
-#             'tool_count': transport_order.tool_count,
-#             'created_at': transport_order.created_at,
-#             'updated_at': transport_order.updated_at
-#         }
-#         return JsonResponse({'success': True, 'data': transport_order_data})
-        
-#     def post(self, request, movement_id):
-#         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
-#         body_data = json.loads(request.body)
-
-#         movement_date = body_data.get('movement_date')
-#         source_shed_id = body_data.get('source_shed')
-#         destination_shed_id = body_data.get('destination_shed')
-#         acknowledgment = body_data.get('acknowledgment')
-#         tool_count = body_data.get('tool_count')
-
-#         updated_fields = {}
-#         if movement_date is not None:
-#             updated_fields['movement_date'] = movement_date
-#         if source_shed_id is not None:
-#             updated_fields['source_shed_id'] = source_shed_id
-#         if destination_shed_id is not None:
-#             updated_fields['destination_shed_id'] = destination_shed_id
-#         if acknowledgment is not None:
-#             updated_fields['acknowledgment'] = acknowledgment
-#         if tool_count is not None:
-#             updated_fields['tool_count'] = tool_count
-
-#         if updated_fields:
-#             TransportOrder.objects.filter(pk=movement_id).update(**updated_fields)
-#             return JsonResponse({'success': True, 'message': 'Transport order details updated successfully'})
-#         else:
-#             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
-from django.db import transaction
         
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateTransportOrderView(View):
@@ -1736,56 +1827,6 @@ class UpdateTransportToolsView(View):
             return JsonResponse({'success': True, 'message': 'Transport tool details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class UpdateServiceOrderView(View):
-
-#     def get(self, request, service_id):
-#         service_order = get_object_or_404(ServiceOrder, pk=service_id)
-#         service_order_data = {
-#             'service_id': service_order.service_id,
-#             'date': service_order.date,
-#             'amount': service_order.amount,
-#             'description': service_order.description,
-#             'tool_count': service_order.tool_count,
-#             'vendor': service_order.vendor_id,
-#             'service_pending': service_order.service_pending,
-#             'created_at': service_order.created_at,
-#             'updated_at': service_order.updated_at
-#         }
-#         return JsonResponse({'success': True, 'data': service_order_data})
-        
-#     def post(self, request, service_id):
-#         service_order = get_object_or_404(ServiceOrder, pk=service_id)
-#         body_data = json.loads(request.body)
-
-#         date = body_data.get('date')
-#         amount = body_data.get('amount')
-#         description = body_data.get('description')
-#         tool_count = body_data.get('tool_count')
-#         vendor_id = body_data.get('vendor')
-#         service_pending = body_data.get('service_pending')
-
-#         updated_fields = {}
-#         if date is not None:
-#             updated_fields['date'] = date
-#         if amount is not None:
-#             updated_fields['amount'] = amount
-#         if description is not None:
-#             updated_fields['description'] = description
-#         if tool_count is not None:
-#             updated_fields['tool_count'] = tool_count
-#         if vendor_id is not None:
-#             vendor = get_object_or_404(Vendor, pk=vendor_id)
-#             updated_fields['vendor'] = vendor
-#         if service_pending is not None:
-#             updated_fields['service_pending'] = service_pending
-
-#         if updated_fields:
-#             ServiceOrder.objects.filter(pk=service_id).update(**updated_fields)
-#             return JsonResponse({'success': True, 'message': 'Service order details updated successfully'})
-#         else:
-#             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateServiceOrderView(View):
