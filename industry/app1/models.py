@@ -165,7 +165,8 @@ class ServiceTools(models.Model):
 class VendorHandles(models.Model):
     vendorhandle_id = models.AutoField(primary_key=True)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
-    tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
+    # tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
+    tool = models.ForeignKey(InstrumentGroupMaster, on_delete=models.CASCADE)
     turnaround_time = models.IntegerField()
     cost = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -173,7 +174,7 @@ class VendorHandles(models.Model):
         unique_together = ('vendor', 'tool')
 
     def __str__(self):
-        return f"Vendor: {self.vendor.name} - Tool: {self.tool.instrument_name} - TurnAround Time: {self.turnaround_time} - Cost: {self.cost}"
+        return f"Vendor: {self.vendor.name} - Tool: {self.tool.tool_group_name} - TurnAround Time: {self.turnaround_time} - Cost: {self.cost}"
 
 class DeliveryChallan(models.Model):
     deliverychallan_id = models.AutoField(primary_key=True)

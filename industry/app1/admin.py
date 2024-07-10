@@ -94,17 +94,13 @@ class VendorHandlesAdmin(ImportExportModelAdmin):
     resource_class = VendorHandlesResource
     list_display = ('vendorhandle_id', 'vendor_name', 'tool_id', 'turnaround_time', 'cost')
     list_filter = ('vendor', 'tool')
-    search_fields = ('vendor__name', 'tool__instrument_name', 'turnaround_time')
+    search_fields = ('vendor__name', 'turnaround_time')
 
     def vendor_name(self, obj):
         return obj.vendor.name
 
-    vendor_name.short_description = 'Vendor Name'
-
     def tool_id(self, obj):
-        return obj.tool.instrument_no
-
-    tool_id.short_description = 'Tool ID'
+        return obj.tool.tool_group_id
 
 @admin.register(DeliveryChallan)
 class DeliveryChallanAdmin(ImportExportModelAdmin):

@@ -426,7 +426,11 @@ class ServiceOrderView(APIView):
                 service_tool = ServiceTools.objects.create(service=service_order,tool=tool,vendor=vendor,service_type=service_type,service_remarks=service_remarks)
 
                 if service_tool.service_type.service_type.lower() == 'calibration':
-                    vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+                    # vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+                    
+                    instrument_group = tool.type_of_tool                    
+                    vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
+                    
                     for vendor_handle in vendor_handles:
                         total_amount += vendor_handle.cost
 
@@ -436,6 +440,43 @@ class ServiceOrderView(APIView):
             return Response({'success': True, 'serviceorder_id': service_order.service_id, 'total_amount': total_amount}, status=status.HTTP_201_CREATED)
         else:
             return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class GenerateBillView(View):
+#     def get(self, request, service_order_id):
+#         service_tools = ServiceTools.objects.filter(service_id=service_order_id)
+#         bill_items = []
+#         total_amount = 0
+
+#         for service_tool in service_tools:
+#             tool = service_tool.tool
+#             service_type = service_tool.service_type.service_type
+
+#             if service_type.lower() == 'calibration':
+#                 vendor = service_tool.vendor
+#                 # vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+                
+                
+#                 instrument_group = tool.type_of_tool
+#                 vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
+
+
+#                 for vendor_handle in vendor_handles:
+#                     cost = vendor_handle.cost
+#                     amount = 1 * cost
+#                     total_amount += amount
+#                     bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': cost,'amount': amount})
+#             else:
+#                 bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': 0,'amount': 0})
+
+#         try:
+#             service_order = ServiceOrder.objects.get(service_id=service_order_id)
+#             service_order.amount = total_amount
+#             service_order.save()
+#         except ServiceOrder.DoesNotExist:
+#             return JsonResponse({'error': f'Service Order with ID {service_order_id} does not exist'}, status=404)
+
+#         data = {'bill_items': bill_items,'total_amount': total_amount}
+#         return JsonResponse(data)
 
 class GenerateBillView(View):
     def get(self, request, service_order_id):
@@ -449,13 +490,22 @@ class GenerateBillView(View):
 
             if service_type.lower() == 'calibration':
                 vendor = service_tool.vendor
-                vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
+                
+                # Fetch the InstrumentGroupMaster for the current tool
+                instrument_group = tool.type_of_tool
+                
+                # Find the corresponding VendorHandles entry
+                vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
 
-                for vendor_handle in vendor_handles:
+                if vendor_handles.exists():
+                    vendor_handle = vendor_handles.first()
                     cost = vendor_handle.cost
                     amount = 1 * cost
                     total_amount += amount
                     bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': cost,'amount': amount})
+                else:
+                    # Handle case where there is no VendorHandles entry
+                    bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': 0,'amount': 0})
             else:
                 bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': 0,'amount': 0})
 
