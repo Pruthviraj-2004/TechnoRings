@@ -7,7 +7,7 @@ from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationRep
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedToolsSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer
+from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedToolsSerializer, SimpleInstrumentModelSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import transaction
@@ -130,8 +130,11 @@ class VendorDetailsView1(APIView):
         vendor_serializer = VendorSerializer(vendor)
         vendor_handles = VendorHandles.objects.filter(vendor=vendor)
         vendor_handles_serializer = VendorHandlesSerializer(vendor_handles, many=True)
-        return Response({'vendor': vendor_serializer.data, 'vendor_handles': vendor_handles_serializer.data})
-  
+        instrument_group_masters = vendor_handles.values_list('tool', flat=True)
+        instruments = InstrumentModel.objects.filter(type_of_tool__in=instrument_group_masters)
+        instruments_serializer = SimpleInstrumentModelSerializer(instruments, many=True)
+        return Response({'vendor': vendor_serializer.data,'vendor_handles': vendor_handles_serializer.data,'instruments': instruments_serializer.data}) 
+
 class TransportOrderViews(APIView):
     def get(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
@@ -189,10 +192,8 @@ class TransportOrderView(APIView):
         return Response(response_data)
 
     def post(self, request):
-        # Deserialize the received data
         serializer = TransportOrderSerializer(data=request.data)
         if serializer.is_valid():
-            # Extract relevant data from the request
             movement_date = serializer.validated_data['movement_date']
             source_shed_id = serializer.validated_data['source_shed']
             destination_shed_id = serializer.validated_data['destination_shed']
@@ -200,7 +201,6 @@ class TransportOrderView(APIView):
             acknowledgment = serializer.validated_data.get('acknowledgment', False)
             tools_data = request.data.get('tools', [])
 
-            # Create the transport order
             transport_order = TransportOrder.objects.create(
                 movement_date=movement_date,
                 source_shed=source_shed_id,
@@ -209,7 +209,6 @@ class TransportOrderView(APIView):
                 acknowledgment=acknowledgment
             )
 
-            # Create tools associated with the transport order
             for tool_data in tools_data:
                 tool_id = tool_data.get('tool')
                 tool_movement_remarks = tool_data.get('tool_movement_remarks', 'good')
@@ -232,13 +231,10 @@ class TransportAcknowledgmentView(View):
 
         try:
             with transaction.atomic():
-                # Update acknowledgment status for the transport order
                 transport_order.save()
 
-                # Get the selected tools for this transport order
                 selected_tools = TransportTools.objects.filter(transport=transport_order)
 
-                # Update ShedTools from source shed to destination shed for selected tools only
                 source_shed = transport_order.source_shed
                 destination_shed = transport_order.destination_shed
                 transported_tools = ShedTools.objects.filter(shed=source_shed, using_tool__in=selected_tools.values_list('tool', flat=True))
@@ -246,7 +242,6 @@ class TransportAcknowledgmentView(View):
 
                 selected_tools.update(acknowledgment=True)
 
-                # Update current_shed field of InstrumentModel for acknowledged tools
                 acknowledged_instruments = selected_tools.values_list('tool', flat=True)
                 InstrumentModel.objects.filter(instrument_no__in=acknowledged_instruments).update(current_shed=destination_shed)
 
@@ -323,64 +318,6 @@ def start_scheduler():
 scheduler_thread = threading.Thread(target=start_scheduler)
 scheduler_thread.start()
 
-# just creates new service orders
-# @method_decorator(csrf_exempt, name='dispatch')
-# class ServiceOrderView(View):
-#     def get(self, request):
-#         order_form = AnotherServiceOrderForm()
-#         tool_forms = [AnotherServiceToolForm(prefix=str(x)) for x in range(3)]
-
-#         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
-
-#     def post(self, request):
-#         order_form = AnotherServiceOrderForm(request.POST)
-#         tool_forms = [AnotherServiceToolForm(request.POST, prefix=str(x)) for x in range(3)]
-
-#         if order_form.is_valid() and all(form.is_valid() for form in tool_forms):
-#             service_order = order_form.save()
-#             vendor_id = request.POST.get('vendor')
-
-#             total_amount = 0
-
-#             for form in tool_forms:
-#                 if form.cleaned_data.get('tool'):
-#                     tool = form.cleaned_data['tool']
-#                     service_tool = ServiceTools.objects.create(service=service_order, tool=tool, vendor_id=vendor_id)
-
-#                     # Calculate the cost if the service type is 'calibration'
-#                     service_type = service_tool.service_type.service_type
-#                     if service_type.lower() == 'calibration':
-#                         vendor_handles = VendorHandles.objects.filter(tool=tool, vendor_id=vendor_id)
-#                         for vendor_handle in vendor_handles:
-#                             total_amount += vendor_handle.cost
-
-#             # Update the service order amount with the calculated total amount
-#             service_order.amount = total_amount
-#             service_order.save()
-
-#             # Redirect to GenerateBillView with the created service order ID
-#             return redirect('generate_bill', service_order_id=service_order.service_id)
-
-#         # Handle invalid forms
-#         return render(request, 'app1/service_order_form1.html', {'order_form': order_form, 'tool_forms': tool_forms})
-               
-# def update_service_status(request):
-#     # Get all instrument models
-#     instrument_models = InstrumentModel.objects.all()
-
-#     # Iterate over each instrument model
-#     for instrument in instrument_models:
-#         # Get the latest calibration report for the instrument
-#         latest_calibration_report = CalibrationReport.objects.filter(calibration_tool=instrument).order_by('calibration_date').first()
-
-#         # Check if a calibration report exists and if the notification date matches the current date
-#         if latest_calibration_report and latest_calibration_report.notification_date == timezone.now().date():
-#             # Update the service status of the instrument
-#             instrument.service_status = True
-#             instrument.save()
-
-#     return JsonResponse({'success': True, 'message': 'Service status updated successfully'})
-
 @method_decorator(csrf_exempt, name='dispatch')
 class ServiceOrderView(APIView):
     def get(self, request):
@@ -441,43 +378,6 @@ class ServiceOrderView(APIView):
         else:
             return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# class GenerateBillView(View):
-#     def get(self, request, service_order_id):
-#         service_tools = ServiceTools.objects.filter(service_id=service_order_id)
-#         bill_items = []
-#         total_amount = 0
-
-#         for service_tool in service_tools:
-#             tool = service_tool.tool
-#             service_type = service_tool.service_type.service_type
-
-#             if service_type.lower() == 'calibration':
-#                 vendor = service_tool.vendor
-#                 # vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
-                
-                
-#                 instrument_group = tool.type_of_tool
-#                 vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
-
-
-#                 for vendor_handle in vendor_handles:
-#                     cost = vendor_handle.cost
-#                     amount = 1 * cost
-#                     total_amount += amount
-#                     bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': cost,'amount': amount})
-#             else:
-#                 bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': 0,'amount': 0})
-
-#         try:
-#             service_order = ServiceOrder.objects.get(service_id=service_order_id)
-#             service_order.amount = total_amount
-#             service_order.save()
-#         except ServiceOrder.DoesNotExist:
-#             return JsonResponse({'error': f'Service Order with ID {service_order_id} does not exist'}, status=404)
-
-#         data = {'bill_items': bill_items,'total_amount': total_amount}
-#         return JsonResponse(data)
-
 class GenerateBillView(View):
     def get(self, request, service_order_id):
         service_tools = ServiceTools.objects.filter(service_id=service_order_id)
@@ -491,10 +391,8 @@ class GenerateBillView(View):
             if service_type.lower() == 'calibration':
                 vendor = service_tool.vendor
                 
-                # Fetch the InstrumentGroupMaster for the current tool
                 instrument_group = tool.type_of_tool
                 
-                # Find the corresponding VendorHandles entry
                 vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
 
                 if vendor_handles.exists():
@@ -504,7 +402,6 @@ class GenerateBillView(View):
                     total_amount += amount
                     bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': cost,'amount': amount})
                 else:
-                    # Handle case where there is no VendorHandles entry
                     bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': 0,'amount': 0})
             else:
                 bill_items.append({'tool': tool.instrument_name,'service_type': service_type,'cost': 0,'amount': 0})
@@ -526,7 +423,6 @@ class StoreDeliveryChallan(APIView):
     def post(self, request):
         data = request.data
 
-        # Retrieve the service order to get the vendor
         service_id = data.get('service')
         if not service_id:
             return JsonResponse({'success': False, 'errors': 'Service ID is required'}, status=400)
@@ -538,16 +434,13 @@ class StoreDeliveryChallan(APIView):
 
         vendor = service_order.vendor
 
-        # Add the vendor to the data
-        data = data.copy()  # Make a mutable copy of the data
+        data = data.copy()
         data['vendor'] = vendor.vendor_id
 
-        # Create DeliveryChallan instance
         delivery_challan_form = DeliveryChallanForm(data)
         if delivery_challan_form.is_valid():
             delivery_challan = delivery_challan_form.save()
 
-            # Process each tool's data
             tool_data_list = []
             index = 0
             while True:
@@ -567,7 +460,6 @@ class StoreDeliveryChallan(APIView):
                 tool_data_list.append(tool_data)
                 index += 1
 
-            # Collect errors for each tool's calibration report form
             errors = []
             for tool_info in tool_data_list:
                 calibration_report_form = CalibrationReportForm(tool_info, files={'calibration_report_file': tool_info['calibration_report_file']})
@@ -578,7 +470,6 @@ class StoreDeliveryChallan(APIView):
                     # Handle first file
                     if tool_info['calibration_report_file']:
                         calibration_report.calibration_report_file = tool_info['calibration_report_file']
-
 
                     # Handle second file
                     if tool_info['calibration_report_file2']:
@@ -592,7 +483,7 @@ class StoreDeliveryChallan(APIView):
 
                     try:
                         # Filter by tool and vendor
-                        vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool, vendor=vendor).first()
+                        vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool.type_of_tool, vendor=vendor).first()
                         if not vendor_handle:
                             raise VendorHandles.DoesNotExist
 
@@ -672,13 +563,6 @@ class StoreDeliveryChallan(APIView):
         else:
             return JsonResponse({'success': False, 'errors': delivery_challan_form.errors}, status=400)
 
-# class InstrumentTransportHistoryView(View):
-#     def get(self, request, instrument_id):
-#         instrument = InstrumentModel.objects.get(pk=instrument_id)
-#         transport_history = TransportTools.objects.filter(tool=instrument)
-    
-#         return render(request, 'app1/instrument_transport_history.html', {'instrument': instrument, 'transport_history': transport_history})
-    
 class InstrumentTransportHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
@@ -696,13 +580,6 @@ class InstrumentTransportHistoryView(APIView):
             'transport_orders': serialized_transport_orders
         })
     
-# class InstrumentServiceHistoryView(View):
-#     def get(self, request, instrument_id):
-#         instrument = InstrumentModel.objects.get(pk=instrument_id)
-#         service_history = ServiceTools.objects.filter(tool=instrument)
-    
-#         return render(request, 'app1/instrument_service_history.html', {'instrument': instrument, 'service_history': service_history})
-
 class InstrumentServiceHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
@@ -737,13 +614,6 @@ class AddInstrumentModelView1(View):
     def get(self, request):
         instrument_model_form = InstrumentForm()
         return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
-
-    # def post(self, request):
-    #     instrument_model_form = InstrumentForm(request.POST)
-    #     if instrument_model_form.is_valid():
-    #         instrument_model_form.save()
-    #         return redirect('home')
-    #     return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
     
     def post(self, request):
         body_data = json.loads(request.body)
@@ -792,13 +662,6 @@ class AddInstrumentGroupMasterView(View):
         instrument_group_master_form = InstrumentGroupMasterForm()
         return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
 
-    # def post(self, request):
-    #     instrument_group_master_form = InstrumentGroupMasterForm(request.POST)
-    #     if instrument_group_master_form.is_valid():
-    #         instrument_group_master_form.save()
-    #         return redirect('home')
-    #     return render(request, 'app1/instrument_group_master_form.html', {'instrument_group_master_form': instrument_group_master_form})
-
     def post(self, request):
         body_data = json.loads(request.body)
         tool_group_name = body_data.get('tool_group_name')
@@ -831,13 +694,6 @@ class AddInstrumentFamilyView(View):
         instrument_family_form = InstrumentFamilyGroupForm()
         return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
 
-    # def post(self, request):
-    #     instrument_family_form = InstrumentFamilyGroupForm(request.POST)
-    #     if instrument_family_form.is_valid():
-    #         instrument_family_form.save()
-    #         return redirect('home')
-    #     return render(request, 'app1/instrument_family_form.html', {'instrument_family_form': instrument_family_form})
-    
     def post(self, request):
         body_data = json.loads(request.body)
         instrument_family_name = body_data.get('instrument_family_name')
@@ -1361,6 +1217,14 @@ class PendingServiceOrdersByVendorView(APIView):
         
         return Response(pending_service_orders_by_vendor)
 
+class ServiceOrderPendingToolsView(View):
+    def get(self, request, service_order_id):
+        service_order = get_object_or_404(ServiceOrder, pk=service_order_id)
+        pending_tools = ServiceTools.objects.filter(service=service_order, service_pending_tool=True)
+        
+        serializer = ServiceToolsSerializer(pending_tools, many=True)
+        return JsonResponse({'success': True, 'data': serializer.data})
+
 @method_decorator(csrf_exempt, name='dispatch')
 def login_view(request):
     if request.method == 'POST':
@@ -1459,44 +1323,54 @@ class UpdateVendorView(View):
             'vendor_type': vendor.vendor_type_id
         }
         return JsonResponse({'success': True, 'data': vendor_data})
-        
-    def post(self, request, vendor_id):
-        try:
-            body_data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
 
+    def post(self, request, vendor_id):
         vendor = get_object_or_404(Vendor, pk=vendor_id)
 
-        name = body_data.get('name')
-        location = body_data.get('location')
-        address = body_data.get('address')
-        phone_number = body_data.get('phone_number')
-        email = body_data.get('email')
-        nabl_number = body_data.get('nabl_number')
-        vendor_type_id = body_data.get('vendor_type')
+        if request.content_type == 'application/json':
+            try:
+                body_data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
 
-        updated_fields = {}
-        if name is not None:
-            updated_fields['name'] = name
-        if location is not None:
-            updated_fields['location'] = location
-        if address is not None:
-            updated_fields['address'] = address
-        if phone_number is not None:
-            updated_fields['phone_number'] = phone_number
-        if email is not None:
-            updated_fields['email'] = email
-        if nabl_number is not None:
-            updated_fields['nabl_number'] = nabl_number
-        if vendor_type_id is not None:
-            updated_fields['vendor_type_id'] = vendor_type_id
+            name = body_data.get('name')
+            location = body_data.get('location')
+            address = body_data.get('address')
+            phone_number = body_data.get('phone_number')
+            email = body_data.get('email')
+            nabl_number = body_data.get('nabl_number')
+            vendor_type_id = body_data.get('vendor_type')
 
-        if updated_fields:
-            Vendor.objects.filter(pk=vendor_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+            updated_fields = {}
+            if name is not None:
+                updated_fields['name'] = name
+            if location is not None:
+                updated_fields['location'] = location
+            if address is not None:
+                updated_fields['address'] = address
+            if phone_number is not None:
+                updated_fields['phone_number'] = phone_number
+            if email is not None:
+                updated_fields['email'] = email
+            if nabl_number is not None:
+                updated_fields['nabl_number'] = nabl_number
+            if vendor_type_id is not None:
+                updated_fields['vendor_type_id'] = vendor_type_id
+
+            if updated_fields:
+                Vendor.objects.filter(pk=vendor_id).update(**updated_fields)
+                return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+            else:
+                return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
         else:
-            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+            form = VendorForm(request.POST, request.FILES, instance=vendor)
+            if form.is_valid():
+                form.save()
+                return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+            else:
+                errors = form.errors.as_json()
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateInstrumentGroupMasterView(View):

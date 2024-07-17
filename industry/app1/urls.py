@@ -97,6 +97,7 @@ urlpatterns = [
     path('instruments_by_instrument_family/<int:instrument_family_id>/', InstrumentsByFamilyView.as_view(), name='instruments-by-family'),
     path('instruments_by_tool_group/<int:tool_group_id>/', InstrumentsByGroupView.as_view(), name='instruments-by-group'),
     path('pending_service_orders/vendor/<int:vendortype_id>/', PendingServiceOrdersByVendorView.as_view(), name='pending_service_orders_by_vendor'),
+    path('pending_service_order_tools/<int:service_order_id>/', ServiceOrderPendingToolsView.as_view(), name='service_order_pending_tools'),
 
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),

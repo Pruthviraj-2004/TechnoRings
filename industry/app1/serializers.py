@@ -100,7 +100,7 @@ class VendorSerializer(serializers.ModelSerializer):
         ]
 
 class VendorHandlesSerializer(serializers.ModelSerializer):
-    tool_name = serializers.CharField(source='tool.instrument_name', read_only=True)
+    tool_name = serializers.CharField(source='tool.tool_group_name', read_only=True)
     vendor_name = serializers.CharField(source='vendor.name', read_only=True)
 
     class Meta:

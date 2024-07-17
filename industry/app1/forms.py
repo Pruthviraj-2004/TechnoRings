@@ -139,7 +139,6 @@ class ServiceTypeForm(forms.ModelForm):
         model = ServiceType
         fields = '__all__'
 
-
 class VendorTypeForm(forms.ModelForm):
     class Meta:
         model = VendorType
