@@ -880,9 +880,26 @@ class ShedDeleteView(View):
 
     def post(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
+        default_shed = get_object_or_404(ShedDetails, pk=1)
+
         try:
+            # Find all instruments in the shed to be deleted
+            instruments = InstrumentModel.objects.filter(current_shed=shed)
+
+            # Reassign instruments to the default shed
+            for instrument in instruments:
+                instrument.current_shed = default_shed
+                instrument.save()
+
+                # Update ShedTools entries to reflect the new shed
+                shed_tool = ShedTools.objects.filter(using_tool=instrument).first()
+                if shed_tool:
+                    shed_tool.shed = default_shed
+                    shed_tool.save()
+
+            # Now delete the shed
             shed.delete()
-            return JsonResponse({'success': True, 'message': 'Shed deleted successfully'})
+            return JsonResponse({'success': True, 'message': 'Shed deleted and instruments reassigned successfully'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 

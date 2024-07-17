@@ -91,7 +91,8 @@ class InstrumentModel(models.Model):
 
 class ShedTools(models.Model):
     shedtool_id = models.AutoField(primary_key=True)
-    shed = models.ForeignKey(ShedDetails, on_delete=models.CASCADE)
+    # shed = models.ForeignKey(ShedDetails, on_delete=models.CASCADE)
+    shed = models.ForeignKey(ShedDetails, on_delete=models.SET_DEFAULT, default=1)
     using_tool = models.ForeignKey(InstrumentModel, on_delete=models.CASCADE)
 
     class Meta:
