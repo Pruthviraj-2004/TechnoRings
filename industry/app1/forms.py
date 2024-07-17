@@ -4,7 +4,7 @@ from .models import CalibrationReport, DeliveryChallan, DeliveryChallanTools, In
 class InstrumentForm(forms.ModelForm):
     class Meta:
         model = InstrumentModel
-        fields = ['instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'type_of_tool', 'calibration_frequency','notification_date']
+        fields = ['instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 'description', 'instrument_range', 'least_count', 'type_of_tool', 'calibration_frequency','notification_date','current_shed']
 
 class InstrumentGroupMasterForm(forms.ModelForm):
     class Meta:

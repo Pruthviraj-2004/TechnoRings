@@ -436,7 +436,6 @@ class StoreDeliveryChallan(APIView):
 
         data = data.copy()
         data['vendor'] = vendor.vendor_id
-        print(data)
 
         delivery_challan_form = DeliveryChallanForm(data)
         if delivery_challan_form.is_valid():
@@ -468,22 +467,18 @@ class StoreDeliveryChallan(APIView):
                     calibration_report = calibration_report_form.save(commit=False)
                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
                     
-                    # Handle first file
                     if tool_info['calibration_report_file']:
                         calibration_report.calibration_report_file = tool_info['calibration_report_file']
 
-                    # Handle second file
                     if tool_info['calibration_report_file2']:
                         calibration_report.calibration_report_file2 = tool_info['calibration_report_file2']
 
-                    # Calculate next calibration date and notification date
                     calibration_frequency = calibration_report.calibration_tool.calibration_frequency
                     calibration_date = calibration_report.calibration_date
                     next_calibration_date = calibration_date + timedelta(days=calibration_frequency)
                     calibration_report.next_calibration_date = next_calibration_date
 
                     try:
-                        # Filter by tool and vendor
                         vendor_handle = VendorHandles.objects.filter(tool=calibration_report.calibration_tool.type_of_tool, vendor=vendor).first()
                         if not vendor_handle:
                             raise VendorHandles.DoesNotExist
@@ -504,6 +499,26 @@ class StoreDeliveryChallan(APIView):
                         instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
                         instrument.notification_date = notification_date
                         instrument.service_status = False
+
+                        new_shed_id = data.get('shed')
+                        if new_shed_id:
+                            try:
+                                new_shed = ShedDetails.objects.get(pk=new_shed_id)
+                                instrument.current_shed = new_shed
+                                instrument.save()
+
+                                ShedTools.objects.update_or_create(
+                                    using_tool=instrument,
+                                    defaults={'shed': new_shed}
+                                )
+
+                            except ShedDetails.DoesNotExist:
+                                errors.append({
+                                    'tool': tool_info['calibration_tool'],
+                                    'errors': 'New shed not found.'
+                                })
+                                continue
+
                         instrument.save()
 
                     except InstrumentModel.DoesNotExist:
@@ -512,42 +527,7 @@ class StoreDeliveryChallan(APIView):
                             'errors': 'Instrument not found.'
                         })
                         continue
-                    # try:
-                    #     instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
-                    #     instrument.notification_date = notification_date
-                    #     instrument.service_status = False
 
-                    #     # Update current shed
-                    #     new_shed_id = data.get('new_shed_id')
-                    #     if new_shed_id:
-                    #         try:
-                    #             new_shed = ShedDetails.objects.get(pk=new_shed_id)
-                    #             instrument.current_shed = new_shed
-                    #             instrument.save()
-
-                    #             # Update or create ShedTools entry
-                    #             ShedTools.objects.update_or_create(
-                    #                 using_tool=instrument,
-                    #                 defaults={'shed': new_shed}
-                    #             )
-
-                    #         except ShedDetails.DoesNotExist:
-                    #             errors.append({
-                    #                 'tool': tool_info['calibration_tool'],
-                    #                 'errors': 'New shed not found.'
-                    #             })
-                    #             continue
-
-                    #     instrument.save()
-
-                    # except InstrumentModel.DoesNotExist:
-                    #     errors.append({
-                    #         'tool': tool_info['calibration_tool'],
-                    #         'errors': 'Instrument not found.'
-                    #     })
-                    #     continue
-
-                    # Create DeliveryChallanTools instance
                     delivery_challan_tool = DeliveryChallanTools(
                         deliverychallan=delivery_challan,
                         tool_id=tool_info['calibration_tool'],
@@ -555,7 +535,6 @@ class StoreDeliveryChallan(APIView):
                     )
                     delivery_challan_tool.save()
 
-                    # Update ServiceTools service_pending_tool to False
                     ServiceTools.objects.filter(service=service_order, tool_id=tool_info['calibration_tool']).update(service_pending_tool=False)
                 else:
                     errors.append({
@@ -566,7 +545,6 @@ class StoreDeliveryChallan(APIView):
             if errors:
                 return JsonResponse({'success': False, 'errors': errors}, status=400)
             else:
-                # Check if all tools' service_pending_tool is False for the service order
                 all_tools_pending = ServiceTools.objects.filter(service=service_order, service_pending_tool=True).exists()
                 if not all_tools_pending:
                     service_order.service_pending = False
@@ -640,6 +618,7 @@ class AddInstrumentModelView1(View):
         least_count = body_data.get('least_count')
         type_of_tool_id = body_data.get('type_of_tool_id')
         calibration_frequency = body_data.get('calibration_frequency')
+        shed_id1 = body_data.get('shed_id')
 
         instrument_data = {
             'instrument_name': instrument_name,
@@ -651,7 +630,8 @@ class AddInstrumentModelView1(View):
             'least_count': least_count,
             'type_of_tool': type_of_tool_id,
             'calibration_frequency': calibration_frequency,
-            'current_shed': 1,
+            # 'current_shed': 1,
+            'current_shed': shed_id1,
         }
 
         form = InstrumentForm(instrument_data)
@@ -660,7 +640,8 @@ class AddInstrumentModelView1(View):
             instrument_instance = form.save()
 
             shed_tool_instance = ShedTools.objects.create(
-                shed_id=1,
+                # shed_id=1,
+                shed_id =shed_id1,
                 using_tool=instrument_instance
             )
 
