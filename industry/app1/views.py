@@ -436,6 +436,7 @@ class StoreDeliveryChallan(APIView):
 
         data = data.copy()
         data['vendor'] = vendor.vendor_id
+        print(data)
 
         delivery_challan_form = DeliveryChallanForm(data)
         if delivery_challan_form.is_valid():
@@ -515,17 +516,29 @@ class StoreDeliveryChallan(APIView):
                     #     instrument = InstrumentModel.objects.get(pk=tool_info['calibration_tool'])
                     #     instrument.notification_date = notification_date
                     #     instrument.service_status = False
-                    #     instrument.save()
 
-                    #     # Update or create ShedTools instance for the selected shed
-                    #     selected_shed_id = data.get('shed_id')  # Assuming 'shed_id' is passed in the request data
-                    #     if selected_shed_id:
-                    #         selected_shed = ShedDetails.objects.get(pk=selected_shed_id)
-                    #         shed_tool_instance, created = ShedTools.objects.update_or_create(
-                    #             shed=selected_shed,
-                    #             using_tool=instrument,
-                    #             defaults={}
-                    #         )
+                    #     # Update current shed
+                    #     new_shed_id = data.get('new_shed_id')
+                    #     if new_shed_id:
+                    #         try:
+                    #             new_shed = ShedDetails.objects.get(pk=new_shed_id)
+                    #             instrument.current_shed = new_shed
+                    #             instrument.save()
+
+                    #             # Update or create ShedTools entry
+                    #             ShedTools.objects.update_or_create(
+                    #                 using_tool=instrument,
+                    #                 defaults={'shed': new_shed}
+                    #             )
+
+                    #         except ShedDetails.DoesNotExist:
+                    #             errors.append({
+                    #                 'tool': tool_info['calibration_tool'],
+                    #                 'errors': 'New shed not found.'
+                    #             })
+                    #             continue
+
+                    #     instrument.save()
 
                     # except InstrumentModel.DoesNotExist:
                     #     errors.append({
