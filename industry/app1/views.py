@@ -1222,11 +1222,7 @@ class PendingServiceOrdersByVendorView(APIView):
         for vendor in vendors:
             pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
             serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
-            pending_service_orders_by_vendor.append({
-                'vendor_id': vendor.vendor_id,
-                'vendor_name': vendor.name,
-                'pending_service_orders': serialized_service_orders
-            })
+            pending_service_orders_by_vendor.append({'vendor_id': vendor.vendor_id,'vendor_name': vendor.name,'pending_service_orders': serialized_service_orders})
 
         return Response(pending_service_orders_by_vendor)
 
@@ -1237,18 +1233,15 @@ class ServiceOrderPendingToolsView(View):
 
         serializer = ServiceToolsSerializer(pending_tools, many=True)
         return JsonResponse({'success': True, 'data': serializer.data})
+    
+class TransportOrderPendingToolsView(View):
+    def get(self, request, transport_order_id):
+        transport_order = get_object_or_404(TransportOrder, pk=transport_order_id)
+        pending_tools = TransportTools.objects.filter(transport=transport_order,acknowledgment=False)
+        
+        serializer = TransportToolsSerializer(pending_tools, many=True)
+        return JsonResponse({'success': True, 'data': serializer.data})
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# def login_view(request):
-#     if request.method == 'POST':
-#         form = AuthenticationForm(request, data=request.POST)
-#         if form.is_valid():
-#             user = form.get_user()
-#             login(request, user)
-#             return redirect('home')
-#     else:
-#         form = AuthenticationForm()
-#     return render(request, 'app1/login.html', {'form': form})
 @method_decorator(csrf_exempt, name='dispatch')
 def login_view(request):
     if request.method == 'POST':
@@ -1396,16 +1389,28 @@ class UpdateVendorView(View):
                 updated_fields['vendor_type_id'] = vendor_type_id
 
             if updated_fields:
-                Vendor.objects.filter(pk=vendor_id).update(**updated_fields)
-                return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+                try:
+                    Vendor.objects.filter(pk=vendor_id).update(**updated_fields)
+                    return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+                except IntegrityError as e:
+                    if 'UNIQUE constraint failed' in str(e):
+                        return JsonResponse({'success': False, 'message': 'Vendor with this data already exists'}, status=400)
+                    else:
+                        return JsonResponse({'success': False, 'message': 'An error occurred while updating the vendor'}, status=400)
             else:
                 return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
         else:
             form = VendorForm(request.POST, request.FILES, instance=vendor)
             if form.is_valid():
-                form.save()
-                return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+                try:
+                    form.save()
+                    return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'})
+                except IntegrityError as e:
+                    if 'UNIQUE constraint failed' in str(e):
+                        return JsonResponse({'success': False, 'message': 'Vendor with this data already exists'}, status=400)
+                    else:
+                        return JsonResponse({'success': False, 'message': 'An error occurred while updating the vendor'}, status=400)
             else:
                 errors = form.errors.as_json()
                 return JsonResponse({'success': False, 'errors': errors}, status=400)
