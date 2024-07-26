@@ -74,15 +74,15 @@ class ServiceToolsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceTools
-        fields = ['servicetool_id', 'service_remarks', 'service', 'tool', 'tool_name', 'vendor', 'vendor_name', 'service_type', 'service_type_name']
-        
+        fields = ['servicetool_id', 'service_remarks', 'service', 'tool', 'tool_name', 'vendor', 'vendor_name', 'service_type', 'service_type_name','service_pending_tool']
+
 class ServiceOrderSerializer(serializers.ModelSerializer):
     tools = ServiceToolsSerializer(many=True, read_only=True)
     vendor_name = serializers.CharField(source='vendor.name', read_only=True)
 
     class Meta:
         model = ServiceOrder
-        fields = ['service_id', 'date', 'amount', 'description', 'tool_count', 'created_at', 'updated_at', 'vendor', 'vendor_name', 'tools']
+        fields = ['service_id', 'date', 'amount', 'description', 'tool_count', 'created_at', 'updated_at', 'vendor', 'vendor_name', 'tools','service_pending']
 
 class VendorTypeSerializer(serializers.ModelSerializer):
     class Meta:

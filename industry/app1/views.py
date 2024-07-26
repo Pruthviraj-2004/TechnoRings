@@ -19,6 +19,7 @@ from datetime import timedelta
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
 
 class VendorTypeView(APIView):
     def get(self, request):
@@ -35,7 +36,7 @@ class InstrumentToolsView(APIView):
 class InstrumentServiceToolsView(APIView):
     def get(self, request):
         instruments = InstrumentModel.objects.filter(service_status=True)
-        serializer = InstrumentModelSerializer(instruments, many=True)        
+        serializer = InstrumentModelSerializer(instruments, many=True)
         return Response({'instrument_models': serializer.data})
 
 class InstrumentFamilyGroupView(APIView):
@@ -55,7 +56,7 @@ class VendorView(APIView):
         vendors = Vendor.objects.all()
         serializer = VendorSerializer(vendors, many=True)
         return Response({'vendors': serializer.data})
-    
+
 class VendorHandlesView(APIView):
     def get(self, request):
         vendor_handles = VendorHandles.objects.all()
@@ -79,7 +80,7 @@ class AllTransportOrderView(APIView):
         transport_orders = TransportOrder.objects.all()
         serializer = TransportOrderSerializer(transport_orders, many=True)
         return Response({'transport_orders': serializer.data})
-    
+
 class RecentTransportOrderView(APIView):
     def get(self, request):
         recent_transport_orders = TransportOrder.objects.order_by('-movement_date')[:10]
@@ -91,19 +92,19 @@ class AllServiceOrderView(APIView):
         service_orders = ServiceOrder.objects.all()
         serializer = ServiceOrderSerializer(service_orders, many=True)
         return Response({'service_orders': serializer.data})
-    
+
 class RecentServiceOrderView(APIView):
     def get(self, request):
         recent_service_orders = ServiceOrder.objects.order_by('-date')[:10]
         serializer = ServiceOrderSerializer(recent_service_orders, many=True)
         return Response({'service_orders': serializer.data})
-    
+
 class AllDeliveryChallanView(APIView):
     def get(self, request):
         delivery_challan = DeliveryChallan.objects.all()
         serializer = DeliveryChallanSerializer(delivery_challan, many=True)
         return Response({'delivery_challan': serializer.data})
-    
+
 class RecentDeliveryChallanView(APIView):
     def get(self, request):
         recent_delivery_challan = DeliveryChallan.objects.order_by('-received_date')[:10]
@@ -133,7 +134,7 @@ class VendorDetailsView1(APIView):
         instrument_group_masters = vendor_handles.values_list('tool', flat=True)
         instruments = InstrumentModel.objects.filter(type_of_tool__in=instrument_group_masters)
         instruments_serializer = SimpleInstrumentModelSerializer(instruments, many=True)
-        return Response({'vendor': vendor_serializer.data,'vendor_handles': vendor_handles_serializer.data,'instruments': instruments_serializer.data}) 
+        return Response({'vendor': vendor_serializer.data,'vendor_handles': vendor_handles_serializer.data,'instruments': instruments_serializer.data})
 
 class TransportOrderViews(APIView):
     def get(self, request, movement_id):
@@ -149,7 +150,7 @@ class ServiceOrderViews(APIView):
         service_order_serializer = ServiceOrderSerializer(service_order)
         service_tools = ServiceTools.objects.filter(service=service_order)
         service_tools_serializer = ServiceToolsSerializer(service_tools, many=True)
-        return Response({'service_order': service_order_serializer.data, 'service_tools': service_tools_serializer.data})        
+        return Response({'service_order': service_order_serializer.data, 'service_tools': service_tools_serializer.data})
 
 class DeliveryChallanViews(APIView):
     def get(self, request, deliverychallan_id):
@@ -158,7 +159,7 @@ class DeliveryChallanViews(APIView):
         delivery_challan_tools = DeliveryChallanTools.objects.filter(deliverychallan=delivery_challan)
         delivery_challan_tools_serializer = DeliveryChallanToolsSerializer(delivery_challan_tools, many=True)
         return Response({'delivery_challan': delivery_challan_serializer.data, 'delivery_challan_tools': delivery_challan_tools_serializer.data})
-    
+
 class ServiceTypeView(APIView):
     def get(self, request):
         service_types = ServiceType.objects.all()
@@ -172,7 +173,7 @@ class TransportOrderView(APIView):
     def get(self, request):
         orders_details = TransportOrder.objects.all()
         orders_serializer = TransportOrderSerializer(orders_details, many=True)
-        
+
         instrument_models = InstrumentModel.objects.all()
         instrument_serializer = InstrumentModelSerializer(instrument_models, many=True)
 
@@ -296,7 +297,7 @@ def update_service_status():
         if latest_calibration_report and latest_calibration_report.notification_date == timezone.now().date():
             instrument.service_status = True
             instrument.save()
-            
+
             print(f"Instrument tool '{instrument.instrument_name}' has been updated.")
 
 import schedule
@@ -344,7 +345,7 @@ class ServiceOrderView(APIView):
 
     def post(self, request):
         order_serializer = ServiceOrderSerializer(data=request.data)
-        
+
         if order_serializer.is_valid():
             service_order = order_serializer.save()
 
@@ -364,10 +365,10 @@ class ServiceOrderView(APIView):
 
                 if service_tool.service_type.service_type.lower() == 'calibration':
                     # vendor_handles = VendorHandles.objects.filter(tool=tool, vendor=vendor)
-                    
-                    instrument_group = tool.type_of_tool                    
+
+                    instrument_group = tool.type_of_tool
                     vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
-                    
+
                     for vendor_handle in vendor_handles:
                         total_amount += vendor_handle.cost
 
@@ -390,9 +391,9 @@ class GenerateBillView(View):
 
             if service_type.lower() == 'calibration':
                 vendor = service_tool.vendor
-                
+
                 instrument_group = tool.type_of_tool
-                
+
                 vendor_handles = VendorHandles.objects.filter(tool=instrument_group, vendor=vendor)
 
                 if vendor_handles.exists():
@@ -419,7 +420,7 @@ class GenerateBillView(View):
 @method_decorator(csrf_exempt, name='dispatch')
 class StoreDeliveryChallan(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    
+
     def post(self, request):
         data = request.data
 
@@ -466,7 +467,7 @@ class StoreDeliveryChallan(APIView):
                 if calibration_report_form.is_valid():
                     calibration_report = calibration_report_form.save(commit=False)
                     calibration_report.calibration_tool_id = tool_info['calibration_tool']
-                    
+
                     if tool_info['calibration_report_file']:
                         calibration_report.calibration_report_file = tool_info['calibration_report_file']
 
@@ -559,23 +560,23 @@ class InstrumentTransportHistoryView(APIView):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
         transport_history = TransportTools.objects.filter(tool=instrument)
         serialized_transport_history = TransportToolsSerializer(transport_history, many=True).data
-        
+
         movement_ids = [item['transport'] for item in serialized_transport_history]
-        
+
         transport_orders = TransportOrder.objects.filter(movement_id__in=movement_ids)
         serialized_transport_orders = TransportOrderSerializer(transport_orders, many=True).data
-        
+
         return Response({
             'instrument': InstrumentModelSerializer(instrument).data,
             'transport_history': serialized_transport_history,
             'transport_orders': serialized_transport_orders
         })
-    
+
 class InstrumentServiceHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = InstrumentModel.objects.get(pk=instrument_id)
         service_history = ServiceTools.objects.filter(tool=instrument).select_related('service')
-        
+
         serialized_service_history = []
         for service_tool in service_history:
             service_order_data = {
@@ -587,17 +588,17 @@ class InstrumentServiceHistoryView(APIView):
                 'vendor': service_tool.service.vendor.name if service_tool.service.vendor else None
             }
             serialized_service_history.append(service_order_data)
-        
-        return Response({'instrument': InstrumentModelSerializer(instrument).data, 'service_history': serialized_service_history})    
+
+        return Response({'instrument': InstrumentModelSerializer(instrument).data, 'service_history': serialized_service_history})
 
 class InstrumentCalibrationHistoryView(APIView):
     def get(self, request, instrument_id):
         instrument = get_object_or_404(InstrumentModel, pk=instrument_id)
-        
+
         calibration_history = CalibrationReport.objects.filter(calibration_tool=instrument)
-        
+
         serialized_calibration_history = CalibrationReportSerializer(calibration_history, many=True).data
-        
+
         return Response({'instrument': InstrumentModelSerializer(instrument).data,'calibration_history': serialized_calibration_history})
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -605,9 +606,12 @@ class AddInstrumentModelView1(View):
     def get(self, request):
         instrument_model_form = InstrumentForm()
         return render(request, 'app1/instrument_model_form.html', {'instrument_model_form': instrument_model_form})
-    
+
     def post(self, request):
-        body_data = json.loads(request.body)
+        try:
+            body_data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': 'Invalid JSON data'}, status=400)
 
         instrument_name = body_data.get('instrument_name')
         manufacturer_name = body_data.get('manufacturer_name')
@@ -619,6 +623,9 @@ class AddInstrumentModelView1(View):
         type_of_tool_id = body_data.get('type_of_tool_id')
         calibration_frequency = body_data.get('calibration_frequency')
         shed_id1 = body_data.get('shed_id')
+
+        if InstrumentModel.objects.filter(instrument_name=instrument_name).exists():
+            return JsonResponse({'success': False, 'errors': 'Tool with this name already exists'})
 
         instrument_data = {
             'instrument_name': instrument_name,
@@ -637,19 +644,24 @@ class AddInstrumentModelView1(View):
         form = InstrumentForm(instrument_data)
 
         if form.is_valid():
-            instrument_instance = form.save()
+            try:
+                instrument_instance = form.save()
 
-            shed_tool_instance = ShedTools.objects.create(
-                # shed_id=1,
-                shed_id =shed_id1,
-                using_tool=instrument_instance
-            )
+                ShedTools.objects.create(
+                    shed_id=shed_id1,
+                    using_tool=instrument_instance
+                )
 
-            return JsonResponse({'success': True})
+                return JsonResponse({'success': True})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'errors': 'Tool with this name already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'errors': 'An error occurred while saving the instrument'}, status=400)
         else:
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
-        
+
 @method_decorator(csrf_exempt, name='dispatch')
 class AddInstrumentGroupMasterView(View):
     def get(self, request):
@@ -676,8 +688,14 @@ class AddInstrumentGroupMasterView(View):
         form = InstrumentGroupMasterForm(instrument_group_master_data)
 
         if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True})
+            try:
+                form.save()
+                return JsonResponse({'success': True})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'errors': 'Instrument group master with this name or code already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'errors': 'An error occurred while saving the instrument group master'}, status=400)
         else:
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
@@ -699,41 +717,34 @@ class AddInstrumentFamilyView(View):
         form = InstrumentFamilyGroupForm(data=instrument_family_data)
 
         if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True})
+            try:
+                form.save()
+                return JsonResponse({'success': True})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'errors': 'Instrument family with this name already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'errors': 'An error occurred while saving the instrument family'}, status=400)
         else:
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
-        
+
 @method_decorator(csrf_exempt, name='dispatch')
 class AddVendorView(View):
+    parser_classes = (MultiPartParser, FormParser)
+
     def get(self, request):
         form = VendorForm()
         return render(request, 'app1/vendor_form.html', {'form': form})
 
     def post(self, request):
-        if request.content_type == 'application/json':
-            try:
-                body_data = json.loads(request.body)
-            except json.JSONDecodeError:
-                return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
-
-            name = body_data.get('name')
-            location = body_data.get('location')
-            address = body_data.get('address')
-            phone_number = body_data.get('phone_number')
-            email = body_data.get('email')
-            nabl_number = body_data.get('nabl_number')
-            vendor_type = body_data.get('vendor_type')
-
-            vendor_data = {'name': name,'location': location,'address': address,'phone_number': phone_number,'email': email,'nabl_number': nabl_number,'vendor_type': vendor_type}
-
-            form = VendorForm(vendor_data)
-        else:
+        if request.content_type.startswith('multipart/form-data'):
             form = VendorForm(request.POST, request.FILES)
+        else:
+            return JsonResponse({'success': False, 'error': 'Unsupported content type'}, status=400)
 
         if form.is_valid():
-            form.save()
+            vendor = form.save()
             return JsonResponse({'success': True})
         else:
             errors = form.errors.as_json()
@@ -790,7 +801,7 @@ class AddShedDetailsView(View):
         else:
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
-        
+
 @method_decorator(csrf_exempt, name='dispatch')
 class AddServiceTypeView(View):
     def get(self, request):
@@ -883,21 +894,12 @@ class ShedDeleteView(View):
         default_shed = get_object_or_404(ShedDetails, pk=1)
 
         try:
-            # Find all instruments in the shed to be deleted
             instruments = InstrumentModel.objects.filter(current_shed=shed)
 
-            # Reassign instruments to the default shed
             for instrument in instruments:
                 instrument.current_shed = default_shed
                 instrument.save()
 
-                # Update ShedTools entries to reflect the new shed
-                shed_tool = ShedTools.objects.filter(using_tool=instrument).first()
-                if shed_tool:
-                    shed_tool.shed = default_shed
-                    shed_tool.save()
-
-            # Now delete the shed
             shed.delete()
             return JsonResponse({'success': True, 'message': 'Shed deleted and instruments reassigned successfully'})
         except Exception as e:
@@ -1070,7 +1072,7 @@ class DeleteInstrumentModelView(View):
             return JsonResponse({'success': True, 'message': 'Instrument model deleted successfully'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
-        
+
 @method_decorator(csrf_exempt, name='dispatch')
 class DeleteServiceTypeView(View):
     def get(self, request, servicetype_id):
@@ -1174,7 +1176,7 @@ class UpdateInstrumentShedView(View):
                 if self.instrument_in_shed(instrument, shed):
                     found_shed = shed
                     break
-            
+
             if found_shed:
                 instrument.current_shed = found_shed
                 instrument.save()
@@ -1204,19 +1206,19 @@ class InstrumentsByFamilyView(APIView):
 class InstrumentsByGroupView(APIView):
     def get(self, request, tool_group_id):
         tool_group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
-        
-        instruments = InstrumentModel.objects.filter(type_of_tool=tool_group)      
+
+        instruments = InstrumentModel.objects.filter(type_of_tool=tool_group)
         serialized_instruments = InstrumentModelSerializer(instruments, many=True).data
-        
+
         return Response({'tool_group': tool_group.tool_group_name,'instruments': serialized_instruments})
 
 class PendingServiceOrdersByVendorView(APIView):
     def get(self, request, vendortype_id):
         vendor_type = get_object_or_404(VendorType, pk=vendortype_id)
         vendors = Vendor.objects.filter(vendor_type=vendor_type)
-        
+
         pending_service_orders_by_vendor = []
-        
+
         for vendor in vendors:
             pending_service_orders = ServiceOrder.objects.filter(vendor=vendor, service_pending=True)
             serialized_service_orders = ServiceOrderSerializer(pending_service_orders, many=True).data
@@ -1225,25 +1227,44 @@ class PendingServiceOrdersByVendorView(APIView):
                 'vendor_name': vendor.name,
                 'pending_service_orders': serialized_service_orders
             })
-        
+
         return Response(pending_service_orders_by_vendor)
 
 class ServiceOrderPendingToolsView(View):
     def get(self, request, service_order_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_order_id)
         pending_tools = ServiceTools.objects.filter(service=service_order, service_pending_tool=True)
-        
+
         serializer = ServiceToolsSerializer(pending_tools, many=True)
         return JsonResponse({'success': True, 'data': serializer.data})
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# def login_view(request):
+#     if request.method == 'POST':
+#         form = AuthenticationForm(request, data=request.POST)
+#         if form.is_valid():
+#             user = form.get_user()
+#             login(request, user)
+#             return redirect('home')
+#     else:
+#         form = AuthenticationForm()
+#     return render(request, 'app1/login.html', {'form': form})
 @method_decorator(csrf_exempt, name='dispatch')
 def login_view(request):
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
+        try:
+            body_data = json.loads(request.body)
+            username = body_data.get('username')
+            password = body_data.get('password')
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
             login(request, user)
-            return redirect('home')
+            return JsonResponse({'success': True, 'message': 'Logged in successfully'})
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid username or password'}, status=400)
     else:
         form = AuthenticationForm()
     return render(request, 'app1/login.html', {'form': form})
@@ -1260,7 +1281,7 @@ class UpdateShedDetailsView(View):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
         shed_data = {'shed_id': shed.shed_id,'name': shed.name,'location': shed.location,'phone_number': shed.phone_number}
         return JsonResponse({'success': True, 'data': shed_data})
-        
+
     def post(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
         body_data = json.loads(request.body)
@@ -1268,6 +1289,7 @@ class UpdateShedDetailsView(View):
         name = body_data.get('name')
         location = body_data.get('location')
         phone_number = body_data.get('phone_number')
+        password = body_data.get('password1')
 
         updated_fields = {}
         if name is not None:
@@ -1276,10 +1298,15 @@ class UpdateShedDetailsView(View):
             updated_fields['location'] = location
         if phone_number is not None:
             updated_fields['phone_number'] = phone_number
+        if password is not None:
+            updated_fields['password'] = password
 
         if updated_fields:
-            ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
+            try:
+                ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
+                return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
+            except IntegrityError:
+                return JsonResponse({'success': False, 'message': 'Shed name already exists'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
@@ -1394,7 +1421,7 @@ class UpdateInstrumentGroupMasterView(View):
             'tool_group_code': group.tool_group_code
         }
         return JsonResponse({'success': True, 'data': group_data})
-        
+
     def post(self, request, tool_group_id):
         group = get_object_or_404(InstrumentGroupMaster, pk=tool_group_id)
         body_data = json.loads(request.body)
@@ -1409,8 +1436,14 @@ class UpdateInstrumentGroupMasterView(View):
             updated_fields['tool_group_code'] = tool_group_code
 
         if updated_fields:
-            InstrumentGroupMaster.objects.filter(pk=tool_group_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Instrument group details updated successfully'})
+            try:
+                InstrumentGroupMaster.objects.filter(pk=tool_group_id).update(**updated_fields)
+                return JsonResponse({'success': True, 'message': 'Instrument group details updated successfully'})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'message': 'Instrument group name or code already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'message': 'An error occurred'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
@@ -1425,7 +1458,7 @@ class UpdateInstrumentFamilyGroupView(View):
             'instrument_group_master': family.instrument_group_master_id
         }
         return JsonResponse({'success': True, 'data': family_data})
-        
+
     def post(self, request, instrument_family_id):
         family = get_object_or_404(InstrumentFamilyGroup, pk=instrument_family_id)
         body_data = json.loads(request.body)
@@ -1440,8 +1473,14 @@ class UpdateInstrumentFamilyGroupView(View):
             updated_fields['instrument_group_master_id'] = instrument_group_master_id
 
         if updated_fields:
-            InstrumentFamilyGroup.objects.filter(pk=instrument_family_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Instrument family group details updated successfully'})
+            try:
+                InstrumentFamilyGroup.objects.filter(pk=instrument_family_id).update(**updated_fields)
+                return JsonResponse({'success': True, 'message': 'Instrument family group details updated successfully'})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'message': 'Instrument family name already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'message': 'An error occurred'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
@@ -1465,7 +1504,7 @@ class UpdateInstrumentModelView(View):
             'current_shed': instrument.current_shed_id
         }
         return JsonResponse({'success': True, 'data': instrument_data})
-        
+
     def post(self, request, instrument_no):
         instrument = get_object_or_404(InstrumentModel, pk=instrument_no)
         body_data = json.loads(request.body)
@@ -1479,6 +1518,7 @@ class UpdateInstrumentModelView(View):
         least_count = body_data.get('least_count')
         type_of_tool_id = body_data.get('type_of_tool_id')
         calibration_frequency = body_data.get('calibration_frequency')
+        current_shed = body_data.get('shed_id')
 
         updated_fields = {}
         if instrument_name is not None:
@@ -1499,13 +1539,28 @@ class UpdateInstrumentModelView(View):
             updated_fields['type_of_tool_id'] = type_of_tool_id
         if calibration_frequency is not None:
             updated_fields['calibration_frequency'] = calibration_frequency
+        if current_shed is not None:
+            updated_fields['current_shed'] = current_shed
 
         if updated_fields:
-            InstrumentModel.objects.filter(pk=instrument_no).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Instrument details updated successfully'})
+            try:
+                InstrumentModel.objects.filter(pk=instrument_no).update(**updated_fields)
+
+                if current_shed is not None:
+                    new_shed = get_object_or_404(ShedDetails, pk=current_shed)
+                    ShedTools.objects.update_or_create(
+                        using_tool=instrument,
+                        defaults={'shed': new_shed}
+                    )
+                return JsonResponse({'success': True, 'message': 'Instrument details updated successfully'})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'message': 'Instrument name already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'message': 'An error occurred while updating the instrument'}, status=500)
         else:
-            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)  
-        
+            return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateVendorHandlesView(View):
 
@@ -1519,7 +1574,7 @@ class UpdateVendorHandlesView(View):
             'cost': vendor_handle.cost
         }
         return JsonResponse({'success': True, 'data': vendor_handle_data})
-        
+
     def post(self, request, vendorhandle_id):
         vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
         body_data = json.loads(request.body)
@@ -1546,7 +1601,7 @@ class UpdateVendorHandlesView(View):
             return JsonResponse({'success': True, 'message': 'Vendor handle details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-        
+
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateTransportOrderView(View):
 
@@ -1575,7 +1630,7 @@ class UpdateTransportOrderView(View):
             'updated_at': transport_order.updated_at
         }
         return JsonResponse({'success': True, 'data': transport_order_data})
-        
+
     @transaction.atomic
     def post(self, request, movement_id):
         transport_order = get_object_or_404(TransportOrder, pk=movement_id)
@@ -1634,7 +1689,7 @@ class UpdateTransportToolsView(View):
             'acknowledgment': transport_tool.acknowledgment
         }
         return JsonResponse({'success': True, 'data': transport_tool_data})
-        
+
     def post(self, request, transporttool_id):
         transport_tool = get_object_or_404(TransportTools, pk=transporttool_id)
         body_data = json.loads(request.body)
@@ -1691,7 +1746,7 @@ class UpdateServiceOrderView(View):
             'updated_at': service_order.updated_at
         }
         return JsonResponse({'success': True, 'data': service_order_data})
-        
+
     @transaction.atomic
     def post(self, request, service_id):
         service_order = get_object_or_404(ServiceOrder, pk=service_id)
@@ -1764,7 +1819,7 @@ class UpdateServiceToolsView(View):
             'service_pending_tool': service_tool.service_pending_tool
         }
         return JsonResponse({'success': True, 'data': service_tool_data})
-        
+
     def post(self, request, servicetool_id):
         service_tool = get_object_or_404(ServiceTools, pk=servicetool_id)
         body_data = json.loads(request.body)
@@ -1809,7 +1864,7 @@ class UpdateDeliveryChallanView(View):
             'service': delivery_challan.service_id,
         }
         return JsonResponse({'success': True, 'data': delivery_challan_data})
-        
+
     def post(self, request, deliverychallan_id):
         delivery_challan = get_object_or_404(DeliveryChallan, pk=deliverychallan_id)
         body_data = json.loads(request.body)
@@ -1853,7 +1908,7 @@ class UpdateCalibrationReportView(View):
             'remark': calibration_report.remark,
         }
         return JsonResponse({'success': True, 'data': calibration_report_data})
-        
+
     def post(self, request, calibrationtool_id):
         calibration_report = get_object_or_404(CalibrationReport, pk=calibrationtool_id)
         body_data = json.loads(request.body)
@@ -1906,7 +1961,7 @@ class UpdateDeliveryChallanToolsView(View):
             'calibration_report': delivery_challan_tool.calibration_report_id,
         }
         return JsonResponse({'success': True, 'data': delivery_challan_tool_data})
-        
+
     def post(self, request, deliverychallantool_id):
         delivery_challan_tool = get_object_or_404(DeliveryChallanTools, pk=deliverychallantool_id)
         body_data = json.loads(request.body)
@@ -2041,7 +2096,7 @@ class UpdateServiceTypeView(View):
             'service_type': service_type.service_type,
         }
         return JsonResponse({'success': True, 'data': service_type_data})
-        
+
     def post(self, request, servicetype_id):
         service_type = get_object_or_404(ServiceType, pk=servicetype_id)
         body_data = json.loads(request.body)
@@ -2068,7 +2123,7 @@ class UpdateVendorTypeView(View):
             'vendor_type': vendor_type.vendor_type,
         }
         return JsonResponse({'success': True, 'data': vendor_type_data})
-        
+
     def post(self, request, vendortype_id):
         vendor_type = get_object_or_404(VendorType, pk=vendortype_id)
         body_data = json.loads(request.body)
