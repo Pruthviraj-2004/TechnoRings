@@ -20,6 +20,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
+from django.contrib.auth.models import User
 
 class VendorTypeView(APIView):
     def get(self, request):
@@ -1297,6 +1298,10 @@ class UpdateShedDetailsView(View):
         if updated_fields:
             try:
                 ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
+                if 'password' in updated_fields:
+                    user = User.objects.get(username=shed.name)
+                    user.set_password(updated_fields['password'])
+                    user.save()
                 return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
             except IntegrityError:
                 return JsonResponse({'success': False, 'message': 'Shed name already exists'}, status=400)
@@ -1478,14 +1483,17 @@ class UpdateInstrumentFamilyGroupView(View):
             updated_fields['instrument_group_master_id'] = instrument_group_master_id
 
         if updated_fields:
+            if 'instrument_family_name' in updated_fields:
+                if InstrumentFamilyGroup.objects.exclude(pk=instrument_family_id).filter(
+                    instrument_family_name=updated_fields['instrument_family_name']
+                ).exists():
+                    return JsonResponse({'success': False, 'message': 'Instrument family name already exists'}, status=400)
+            
             try:
                 InstrumentFamilyGroup.objects.filter(pk=instrument_family_id).update(**updated_fields)
                 return JsonResponse({'success': True, 'message': 'Instrument family group details updated successfully'})
-            except IntegrityError as e:
-                if 'UNIQUE constraint failed' in str(e):
-                    return JsonResponse({'success': False, 'message': 'Instrument family name already exists'}, status=400)
-                else:
-                    return JsonResponse({'success': False, 'message': 'An error occurred'}, status=400)
+            except IntegrityError:
+                return JsonResponse({'success': False, 'message': 'An error occurred'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
