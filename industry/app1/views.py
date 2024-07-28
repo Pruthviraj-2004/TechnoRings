@@ -1405,7 +1405,11 @@ class UpdateVendorView(View):
             if nabl_number is not None:
                 updated_fields['nabl_number'] = nabl_number
             if vendor_type_id is not None:
-                updated_fields['vendor_type_id'] = vendor_type_id
+                try:
+                    vendor_type = VendorType.objects.get(pk=vendor_type_id)
+                    updated_fields['vendor_type'] = vendor_type
+                except VendorType.DoesNotExist:
+                    return JsonResponse({'success': False, 'message': 'Invalid VendorType ID'}, status=400)
 
             if updated_fields:
                 try:
