@@ -3,11 +3,11 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
 from .forms import AnotherServiceOrderForm, AnotherServiceToolForm, CalibrationReportForm, DeliveryChallanForm, DeliveryChallanToolsFormSet, InstrumentFamilyGroupForm, InstrumentForm, InstrumentGroupMasterForm, ServiceTypeForm, ShedDetailsForm, ShedLoginForm, ShedToolsForm, TransportOrderForm, TransportToolsForm, VendorForm, VendorHandlesForm, VendorTypeForm
-from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
+from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationReport, DeliveryChallan, DeliveryChallanTools, InstrumentModel,  ServiceOrder, ServiceTools, ServiceType, ShedTools, ShedUser, TransportOrder, ShedDetails, TransportTools, Vendor, VendorHandles, VendorType
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedToolsSerializer, SimpleInstrumentModelSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer
+from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedToolsSerializer, SimpleInstrumentModelSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer, VendorUpdateSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import transaction
@@ -1298,15 +1298,29 @@ class UpdateShedDetailsView(View):
         if updated_fields:
             try:
                 ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
+                
                 if 'password' in updated_fields:
-                    user = User.objects.get(username=shed.name)
-                    user.set_password(updated_fields['password'])
-                    user.save()
+                    try:
+                        user = User.objects.get(username=shed.name)
+                        user.set_password(updated_fields['password'])
+                        user.save()
+                    except User.DoesNotExist:
+                        return JsonResponse({'success': False, 'message': 'User does not exist'}, status=400)
+
                 return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
             except IntegrityError:
                 return JsonResponse({'success': False, 'message': 'Shed name already exists'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=ShedDetails)
+def create_user_and_sheduser(sender, instance, created, **kwargs):
+    if created:
+        user = User.objects.create_user(username=instance.name, password=instance.password)
+        ShedUser.objects.create(user=user, shed=instance)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateShedToolsView(View):
@@ -2153,3 +2167,24 @@ class UpdateVendorTypeView(View):
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
+class VendorUpdateView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, vendor_id):
+        try:
+            vendor = Vendor.objects.get(pk=vendor_id)
+        except Vendor.DoesNotExist:
+            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+
+        if vendor.vendor_type.id != 1:
+            data.pop('nabl_certificate', None)
+            data.pop('nabl_number', None)
+
+        serializer = VendorUpdateSerializer(vendor, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

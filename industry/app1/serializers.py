@@ -127,3 +127,7 @@ class DeliveryChallanToolsSerializer(serializers.ModelSerializer):
         model = DeliveryChallanTools
         fields = ['deliverychallantool_id', 'deliverychallan', 'tool', 'tool_name', 'calibration_report']
           
+class VendorUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vendor
+        fields = ['name', 'location', 'address', 'phone_number', 'email', 'vendor_type', 'nabl_number', 'nabl_certificate']
