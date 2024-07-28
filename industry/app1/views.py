@@ -2166,38 +2166,3 @@ class UpdateVendorTypeView(View):
             return JsonResponse({'success': True, 'message': 'Vendor type details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
-
-class VendorUpdateView(APIView):
-    parser_classes = (MultiPartParser, FormParser, JSONParser)
-
-    def post(self, request, vendor_id):
-        vendor = get_object_or_404(Vendor, pk=vendor_id)
-        data = request.data.copy()
-
-        if request.content_type == 'application/json':
-            try:
-                body_data = json.loads(request.body)
-                data.update(body_data)
-            except json.JSONDecodeError:
-                return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
-
-        vendor_type_id = data.get('vendor_type', vendor.vendor_type.id if vendor.vendor_type else None)
-
-        if vendor_type_id != 1:
-            data.pop('nabl_certificate', None)
-            data.pop('nabl_number', None)
-
-        serializer = VendorUpdateSerializer(vendor, data=data, partial=True)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-                return JsonResponse({'success': True, 'message': 'Vendor details updated successfully'}, status=200)
-            except IntegrityError as e:
-                if 'UNIQUE constraint failed' in str(e):
-                    return JsonResponse({'success': False, 'message': 'Vendor with this data already exists'}, status=400)
-                else:
-                    return JsonResponse({'success': False, 'message': 'An error occurred while updating the vendor'}, status=400)
-        else:
-            return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
-        
