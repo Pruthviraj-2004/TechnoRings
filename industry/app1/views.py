@@ -777,6 +777,31 @@ class AddVendorHandlesView(View):
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class AddShedDetailsView(View):
+#     def get(self, request):
+#         form = ShedDetailsForm()
+#         return render(request, 'app1/shed_details_form.html', {'form': form})
+
+#     def post(self, request):
+#         body_data = json.loads(request.body)
+
+#         name = body_data.get('name')
+#         location = body_data.get('location')
+#         address = body_data.get('address')
+#         phone_number = body_data.get('phone_number')
+#         password1 = body_data.get('password1')
+
+#         shed_details_data = {'name': name,'location': location,'address': address,'phone_number': phone_number,'password':password1}
+
+#         form = ShedDetailsForm(shed_details_data)
+
+#         if form.is_valid():
+#             form.save()
+#             return JsonResponse({'success': True})
+#         else:
+#             errors = form.errors.as_json()
+#             return JsonResponse({'success': False, 'errors': errors})
 @method_decorator(csrf_exempt, name='dispatch')
 class AddShedDetailsView(View):
     def get(self, request):
@@ -784,7 +809,13 @@ class AddShedDetailsView(View):
         return render(request, 'app1/shed_details_form.html', {'form': form})
 
     def post(self, request):
-        body_data = json.loads(request.body)
+        if request.content_type == 'application/json':
+            try:
+                body_data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+        else:
+            body_data = request.POST
 
         name = body_data.get('name')
         location = body_data.get('location')
@@ -792,7 +823,13 @@ class AddShedDetailsView(View):
         phone_number = body_data.get('phone_number')
         password1 = body_data.get('password1')
 
-        shed_details_data = {'name': name,'location': location,'address': address,'phone_number': phone_number,'password':password1}
+        shed_details_data = {
+            'name': name,
+            'location': location,
+            'address': address,
+            'phone_number': phone_number,
+            'password': password1
+        }
 
         form = ShedDetailsForm(shed_details_data)
 
@@ -1268,17 +1305,72 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# class UpdateShedDetailsView(View):
+
+#     def get(self, request, shed_id):
+#         shed = get_object_or_404(ShedDetails, pk=shed_id)
+#         shed_data = {'shed_id': shed.shed_id,'name': shed.name,'location': shed.location,'phone_number': shed.phone_number}
+#         return JsonResponse({'success': True, 'data': shed_data})
+
+#     def post(self, request, shed_id):
+#         shed = get_object_or_404(ShedDetails, pk=shed_id)
+#         body_data = json.loads(request.body)
+
+#         name = body_data.get('name')
+#         location = body_data.get('location')
+#         phone_number = body_data.get('phone_number')
+#         password = body_data.get('password1')
+
+#         updated_fields = {}
+#         if name is not None:
+#             updated_fields['name'] = name
+#         if location is not None:
+#             updated_fields['location'] = location
+#         if phone_number is not None:
+#             updated_fields['phone_number'] = phone_number
+#         if password is not None:
+#             updated_fields['password'] = password
+
+#         if updated_fields:
+#             try:
+#                 ShedDetails.objects.filter(pk=shed_id).update(**updated_fields)
+                
+#                 if 'password' in updated_fields:
+#                     try:
+#                         user = User.objects.get(username=shed.name)
+#                         user.set_password(updated_fields['password'])
+#                         user.save()
+#                     except User.DoesNotExist:
+#                         return JsonResponse({'success': False, 'message': 'User does not exist'}, status=400)
+
+#                 return JsonResponse({'success': True, 'message': 'Shed details updated successfully'})
+#             except IntegrityError:
+#                 return JsonResponse({'success': False, 'message': 'Shed name already exists'}, status=400)
+#         else:
+#             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateShedDetailsView(View):
 
     def get(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
-        shed_data = {'shed_id': shed.shed_id,'name': shed.name,'location': shed.location,'phone_number': shed.phone_number}
+        shed_data = {
+            'shed_id': shed.shed_id,
+            'name': shed.name,
+            'location': shed.location,
+            'phone_number': shed.phone_number
+        }
         return JsonResponse({'success': True, 'data': shed_data})
 
     def post(self, request, shed_id):
         shed = get_object_or_404(ShedDetails, pk=shed_id)
-        body_data = json.loads(request.body)
+        if request.content_type == 'application/json':
+            try:
+                body_data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+        else:
+            body_data = request.POST
 
         name = body_data.get('name')
         location = body_data.get('location')
@@ -1313,14 +1405,14 @@ class UpdateShedDetailsView(View):
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
 
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+# from django.db.models.signals import post_save
+# from django.dispatch import receiver
 
-@receiver(post_save, sender=ShedDetails)
-def create_user_and_sheduser(sender, instance, created, **kwargs):
-    if created:
-        user = User.objects.create_user(username=instance.name, password=instance.password)
-        ShedUser.objects.create(user=user, shed=instance)
+# @receiver(post_save, sender=ShedDetails)
+# def create_user_and_sheduser(sender, instance, created, **kwargs):
+#     if created:
+#         user = User.objects.create_user(username=instance.name, password=instance.password)
+#         ShedUser.objects.create(user=user, shed=instance)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateShedToolsView(View):
@@ -1608,7 +1700,14 @@ class UpdateVendorHandlesView(View):
 
     def post(self, request, vendorhandle_id):
         vendor_handle = get_object_or_404(VendorHandles, pk=vendorhandle_id)
-        body_data = json.loads(request.body)
+
+        if request.content_type == 'application/json':
+            try:
+                body_data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+        else:
+            body_data = request.POST
 
         vendor_id = body_data.get('vendor')
         tool_id = body_data.get('tool')
@@ -1620,7 +1719,7 @@ class UpdateVendorHandlesView(View):
             vendor = get_object_or_404(Vendor, pk=vendor_id)
             updated_fields['vendor'] = vendor
         if tool_id is not None:
-            tool = get_object_or_404(InstrumentModel, pk=tool_id)
+            tool = get_object_or_404(InstrumentGroupMaster, pk=tool_id)
             updated_fields['tool'] = tool
         if turnaround_time is not None:
             updated_fields['turnaround_time'] = turnaround_time
@@ -1628,11 +1727,17 @@ class UpdateVendorHandlesView(View):
             updated_fields['cost'] = cost
 
         if updated_fields:
-            VendorHandles.objects.filter(pk=vendorhandle_id).update(**updated_fields)
-            return JsonResponse({'success': True, 'message': 'Vendor handle details updated successfully'})
+            try:
+                VendorHandles.objects.filter(pk=vendorhandle_id).update(**updated_fields)
+                return JsonResponse({'success': True, 'message': 'Vendor handle details updated successfully'})
+            except IntegrityError as e:
+                if 'UNIQUE constraint failed' in str(e):
+                    return JsonResponse({'success': False, 'message': 'Vendor with this data already exists'}, status=400)
+                else:
+                    return JsonResponse({'success': False, 'message': 'An error occurred while updating the vendor handle'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
+        
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateTransportOrderView(View):
 
