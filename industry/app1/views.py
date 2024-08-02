@@ -777,31 +777,6 @@ class AddVendorHandlesView(View):
             errors = form.errors.as_json()
             return JsonResponse({'success': False, 'errors': errors})
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# class AddShedDetailsView(View):
-#     def get(self, request):
-#         form = ShedDetailsForm()
-#         return render(request, 'app1/shed_details_form.html', {'form': form})
-
-#     def post(self, request):
-#         body_data = json.loads(request.body)
-
-#         name = body_data.get('name')
-#         location = body_data.get('location')
-#         address = body_data.get('address')
-#         phone_number = body_data.get('phone_number')
-#         password1 = body_data.get('password1')
-
-#         shed_details_data = {'name': name,'location': location,'address': address,'phone_number': phone_number,'password':password1}
-
-#         form = ShedDetailsForm(shed_details_data)
-
-#         if form.is_valid():
-#             form.save()
-#             return JsonResponse({'success': True})
-#         else:
-#             errors = form.errors.as_json()
-#             return JsonResponse({'success': False, 'errors': errors})
 @method_decorator(csrf_exempt, name='dispatch')
 class AddShedDetailsView(View):
     def get(self, request):
@@ -1404,15 +1379,6 @@ class UpdateShedDetailsView(View):
                 return JsonResponse({'success': False, 'message': 'Shed name already exists'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
-
-# from django.db.models.signals import post_save
-# from django.dispatch import receiver
-
-# @receiver(post_save, sender=ShedDetails)
-# def create_user_and_sheduser(sender, instance, created, **kwargs):
-#     if created:
-#         user = User.objects.create_user(username=instance.name, password=instance.password)
-#         ShedUser.objects.create(user=user, shed=instance)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateShedToolsView(View):

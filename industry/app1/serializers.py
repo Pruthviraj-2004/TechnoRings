@@ -16,14 +16,27 @@ class InstrumentGroupMasterSerializer(serializers.ModelSerializer):
 class InstrumentModelSerializer(serializers.ModelSerializer):
     type_of_tool_name = serializers.CharField(source='type_of_tool.tool_group_name', read_only=True)
     current_shed_name = serializers.CharField(source='current_shed.name', read_only=True)
+    calibration_date = serializers.SerializerMethodField()
+    next_calibration_date = serializers.SerializerMethodField()
 
     class Meta:
         model = InstrumentModel
         fields = [
-            'instrument_no', 'instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst', 
-            'description', 'instrument_range', 'least_count', 'calibration_frequency', 
-            'service_status', 'type_of_tool', 'type_of_tool_name', 'current_shed', 'current_shed_name'
+            'instrument_no', 'instrument_name', 'manufacturer_name', 'year_of_purchase', 'gst',
+            'description', 'instrument_range', 'least_count', 'calibration_frequency',
+            'service_status', 'type_of_tool', 'type_of_tool_name', 'current_shed', 'current_shed_name',
+            'calibration_date', 'next_calibration_date'
         ]
+
+    def get_calibration_date(self, obj):
+        # Get the latest calibration report for the instrument
+        latest_report = CalibrationReport.objects.filter(calibration_tool=obj).order_by('-calibration_date').first()
+        return latest_report.calibration_date if latest_report else None
+
+    def get_next_calibration_date(self, obj):
+        # Get the latest calibration report for the instrument
+        latest_report = CalibrationReport.objects.filter(calibration_tool=obj).order_by('-calibration_date').first()
+        return latest_report.next_calibration_date if latest_report else None
 
 class SimpleInstrumentModelSerializer(serializers.ModelSerializer):
     class Meta:
