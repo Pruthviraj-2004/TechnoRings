@@ -144,3 +144,8 @@ class VendorUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vendor
         fields = ['name', 'location', 'address', 'phone_number', 'email', 'vendor_type', 'nabl_number', 'nabl_certificate']
+
+class ShedNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShedDetails
+        fields = ['shed_note']

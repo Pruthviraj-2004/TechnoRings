@@ -7,7 +7,7 @@ from .models import InstrumentFamilyGroup, InstrumentGroupMaster, CalibrationRep
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedToolsSerializer, SimpleInstrumentModelSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer, VendorUpdateSerializer
+from .serializers import CalibrationReportSerializer, DeliveryChallanSerializer, DeliveryChallanToolsSerializer, InstrumentFamilyGroupSerializer, InstrumentGroupMasterSerializer, InstrumentModelSerializer, ServiceOrderSerializer, ServiceToolsSerializer, ServiceTypeSerializer, ShedDetailsSerializer, ShedNoteSerializer, ShedToolsSerializer, SimpleInstrumentModelSerializer, TransportOrderSerializer, TransportToolsSerializer, VendorHandlesSerializer, VendorSerializer, VendorTypeSerializer, VendorUpdateSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db import transaction
@@ -2241,3 +2241,38 @@ class UpdateVendorTypeView(View):
             return JsonResponse({'success': True, 'message': 'Vendor type details updated successfully'})
         else:
             return JsonResponse({'success': False, 'message': 'No fields to update'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateShedNoteView(View):
+    def patch(self, request, shed_id):
+        try:
+            shed = ShedDetails.objects.get(shed_id=shed_id)
+        except ShedDetails.DoesNotExist:
+            return JsonResponse({'error': 'ShedDetails not found'}, status=404)
+
+        body_data = json.loads(request.body.decode('utf-8'))
+        shed_note = body_data.get('shed_note')
+
+        if shed_note is not None:
+            shed.shed_note = shed_note
+            shed.save()
+            return JsonResponse({'success': True, 'message': 'Shed note updated successfully'})
+        else:
+            return JsonResponse({'success': False, 'message': 'No shed note provided'}, status=400)
+        
+# @method_decorator(csrf_exempt, name='dispatch')
+# class UpdateShedNoteView(View):
+#     def patch(self, request, shed_id):
+#         try:
+#             shed = ShedDetails.objects.get(shed_id=shed_id)
+#         except ShedDetails.DoesNotExist:
+#             return JsonResponse({'error': 'ShedDetails not found'}, status=404)
+
+#         data = json.loads(request.body.decode('utf-8'))
+        
+#         serializer = ShedNoteSerializer(shed, data=data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return JsonResponse({'success': True, 'message': 'Shed note updated successfully'})
+#         else:
+#             return JsonResponse({'success': False, 'message': 'Invalid data', 'errors': serializer.errors}, status=400)

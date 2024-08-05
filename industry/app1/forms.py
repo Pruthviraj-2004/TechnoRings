@@ -143,3 +143,4 @@ class VendorTypeForm(forms.ModelForm):
     class Meta:
         model = VendorType
         fields = '__all__'
+
