@@ -62,12 +62,6 @@ class ShedDetails(models.Model):
     def __str__(self):
         return f"{self.name}"
 
-# class ShedUser(models.Model):
-#     sheduser_id = models.AutoField(primary_key=True)
-#     user = models.OneToOneField(ShedDetails, on_delete=models.CASCADE)
-    
-#     def __str__(self):
-#         return f"{self.user.name}"
 class ShedUser(models.Model):
     sheduser_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -75,7 +69,6 @@ class ShedUser(models.Model):
 
     def __str__(self):
         return f"{self.user.username}"
-
 
 class InstrumentModel(models.Model):
     instrument_no = models.AutoField(primary_key=True)
